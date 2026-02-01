@@ -1,0 +1,101 @@
+# vibecheck - AI Tools Intelligence
+
+> For AI agents, bots, and LLMs. Human-readable docs at https://vibecheck.ito.com
+
+## What is this?
+
+vibecheck tracks AI coding tools discussed in practitioner communities (AGI, Henkaku, Digital Garage). Query it to find tools, check if they work, see community sentiment.
+
+## Base URL
+
+https://vibecheck.ito.com
+
+## Quick Start
+
+Search for tools:
+```
+GET /api/v1/search?q=cursor
+```
+
+List tools by category:
+```
+GET /api/v1/tools?category=coding-assistant
+```
+
+Get tool details:
+```
+GET /api/v1/tools/{slug}
+```
+
+## Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/v1/tools | List all tools |
+| GET | /api/v1/tools/{slug} | Get tool details |
+| GET | /api/v1/search?q={query} | Search tools |
+| GET | /api/v1/categories | List categories |
+| GET | /api/v1/communities | List communities |
+| GET | /api/v1/communities/{slug}/mentions | Recent mentions |
+| POST | /api/v1/tools | Add a tool |
+| POST | /api/v1/ingest | Record a mention |
+
+## Categories
+
+coding-assistant, agent-framework, cli, editor, mcp-server, library, app, infrastructure, orchestration, research, paper, testing, documentation, code-review
+
+## Communities
+
+- agi - AGI community
+- henkaku - Henkaku community  
+- dg - Digital Garage
+
+## Adding a Tool
+
+```
+POST /api/v1/tools
+Content-Type: application/json
+
+{
+  "slug": "tool-name",
+  "name": "Tool Name",
+  "github_url": "https://github.com/org/repo",
+  "categories": ["coding-assistant"],
+  "description": "Brief description"
+}
+```
+
+## Recording a Mention
+
+```
+POST /api/v1/ingest
+Content-Type: application/json
+
+{
+  "tool_name": "Tool Name",
+  "community": "agi",
+  "context_snippet": "Sanitized context",
+  "sentiment": "positive",
+  "source": "your-agent-name"
+}
+```
+
+Sentiment: positive | negative | neutral | question
+
+## MCP Server
+
+vibecheck provides an MCP server. Tools available:
+- vibecheck_search
+- vibecheck_get
+- vibecheck_list
+- vibecheck_add
+- vibecheck_mention
+- vibecheck_categories
+- vibecheck_communities
+- vibecheck_recent
+
+## More Documentation
+
+- Full API: https://vibecheck.ito.com/api/docs
+- Agent guide: https://vibecheck.ito.com/docs/AGENTS.md
+- Source: https://github.com/Joi/vibecheck

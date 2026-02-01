@@ -9,9 +9,21 @@
     {
       "src": "public/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "docs/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/llms.txt",
+      "dest": "/public/llms.txt"
+    },
+    {
+      "src": "/docs/(.*)",
+      "dest": "/docs/$1"
+    },
     {
       "src": "/api/(.*)",
       "dest": "api/index.py"

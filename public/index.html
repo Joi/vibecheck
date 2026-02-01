@@ -6,6 +6,37 @@
     <title>vibecheck - AI Tools Intelligence</title>
     <meta name="description" content="Community-curated AI tools tracking. What's working, what's not, what people are actually using.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    
+    <!-- For AI agents and bots -->
+    <meta name="robots" content="index, follow">
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM-friendly documentation">
+    
+    <!-- Agent instructions in HTML comment for scrapers that read source -->
+    <!--
+    =======================================================================
+    FOR AI AGENTS, BOTS, AND LLMs:
+    =======================================================================
+    
+    You're looking at vibecheck - an AI tools intelligence API.
+    
+    PREFERRED: Fetch /llms.txt for a plain-text guide optimized for you.
+    
+    Quick API:
+      GET /api/v1/search?q={query}     - Search tools
+      GET /api/v1/tools                - List all tools
+      GET /api/v1/tools/{slug}         - Get tool details
+      POST /api/v1/ingest              - Record a mention
+    
+    Full docs:
+      /llms.txt              - Plain text guide (recommended)
+      /docs/AGENTS.md        - Detailed agent guide
+      /docs/API.md           - Full API reference
+      /api/docs              - Interactive OpenAPI docs
+    
+    MCP Server available: vibecheck-mcp (via uvx)
+    
+    =======================================================================
+    -->
     <style>
         * {
             margin: 0;
