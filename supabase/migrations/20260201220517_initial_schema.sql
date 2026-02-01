@@ -2,11 +2,10 @@
 -- AI tools intelligence database
 
 -- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table (GitHub OAuth)
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   github_id TEXT UNIQUE,
   github_username TEXT,
   display_name TEXT,
@@ -18,7 +17,7 @@ CREATE TABLE users (
 
 -- Tools table
 CREATE TABLE tools (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   url TEXT,
@@ -45,7 +44,7 @@ CREATE TABLE tools (
 
 -- Evaluations table
 CREATE TABLE evaluations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tool_id UUID REFERENCES tools(id) ON DELETE CASCADE,
   evaluator_id UUID REFERENCES users(id),
   
@@ -69,7 +68,7 @@ CREATE TABLE evaluations (
 
 -- External links (blog posts, videos, discussions)
 CREATE TABLE links (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tool_id UUID REFERENCES tools(id) ON DELETE CASCADE,
   submitted_by UUID REFERENCES users(id),
   
@@ -86,7 +85,7 @@ CREATE TABLE links (
 
 -- Import batches (track where data came from)
 CREATE TABLE import_batches (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source_type TEXT NOT NULL,  -- 'slack', 'whatsapp', 'discord', 'awesome-list', 'manual'
   source_name TEXT,           -- Channel name, list URL, etc
   imported_by UUID REFERENCES users(id),
@@ -97,7 +96,7 @@ CREATE TABLE import_batches (
 
 -- Tool mentions from imports (preserves context)
 CREATE TABLE tool_mentions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tool_id UUID REFERENCES tools(id) ON DELETE CASCADE,
   import_batch_id UUID REFERENCES import_batches(id) ON DELETE CASCADE,
   
@@ -110,7 +109,7 @@ CREATE TABLE tool_mentions (
 
 -- Categories (for reference and validation)
 CREATE TABLE categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   description TEXT,

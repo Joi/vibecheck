@@ -2,7 +2,7 @@
 -- Tracks which communities have discussed/endorsed tools
 
 CREATE TABLE communities (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,           -- "agi", "henkaku", "dg"
   name TEXT NOT NULL,                   -- "AGI", "Henkaku", "DG"
   description TEXT,
@@ -19,7 +19,7 @@ INSERT INTO communities (slug, name, description, is_private) VALUES
 
 -- Junction table: which tools are discussed in which communities
 CREATE TABLE tool_communities (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tool_id UUID REFERENCES tools(id) ON DELETE CASCADE,
   community_id UUID REFERENCES communities(id) ON DELETE CASCADE,
   first_mentioned TIMESTAMPTZ DEFAULT now(),
