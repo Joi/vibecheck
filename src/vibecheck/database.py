@@ -310,3 +310,49 @@ class CommunitiesDB:
             self.client.table("tool_communities").update(
                 {"mention_count": current.data["mention_count"] + 1}
             ).eq("id", current.data["id"]).execute()
+
+    def record_mention(
+        self,
+        tool_id: str,
+        community_slug: str,
+        mentioned_at: Optional[str] = None,
+        context_snippet: Optional[str] = None,
+        sentiment: Optional[str] = None,
+    ) -> dict:
+        """Record a specific mention of a tool in a community with timestamp."""
+        community = self.get_community(community_slug)
+        community_id = community["id"] if community else None
+
+        data = {
+            "tool_id": tool_id,
+            "community_id": community_id,
+            "context_snippet": context_snippet,
+            "sentiment": sentiment,
+        }
+        if mentioned_at:
+            data["mentioned_at"] = mentioned_at
+
+        result = self.client.table("tool_mentions").insert(data).execute()
+
+        # Also update the tool_communities aggregate
+        if community_id:
+            self.increment_mention_count(tool_id, community_slug)
+
+        return result.data[0]
+
+    def get_mention_history(
+        self,
+        tool_slug: Optional[str] = None,
+        community_slug: Optional[str] = None,
+        limit: int = 50,
+    ) -> list[dict]:
+        """Get mention history, optionally filtered by tool or community."""
+        query = self.client.table("tool_mention_history").select("*")
+
+        if tool_slug:
+            query = query.eq("tool_slug", tool_slug)
+        if community_slug:
+            query = query.eq("community_slug", community_slug)
+
+        result = query.order("mentioned_at", desc=True).limit(limit).execute()
+        return result.data or []

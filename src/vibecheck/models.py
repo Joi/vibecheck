@@ -236,8 +236,21 @@ class ToolMention(BaseModel):
     tool_url: Optional[str] = None
     context_snippet: Optional[str] = None  # Sanitized
     sentiment: Optional[Sentiment] = None
-    mention_date: Optional[datetime] = None
+    mentioned_at: Optional[datetime] = None  # When the tool was mentioned
     community: Optional[str] = None  # Community slug where mentioned
+
+
+class ToolMentionResponse(BaseModel):
+    """A tool mention with full context."""
+
+    id: str
+    tool_slug: str
+    tool_name: str
+    community_slug: Optional[str] = None
+    community_name: Optional[str] = None
+    mentioned_at: datetime
+    context_snippet: Optional[str] = None
+    sentiment: Optional[Sentiment] = None
 
 
 class ImportBatchCreate(BaseModel):

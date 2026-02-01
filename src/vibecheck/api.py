@@ -20,6 +20,7 @@ from .models import (
     ToolCreate,
     ToolDetailResponse,
     ToolListResponse,
+    ToolMentionResponse,
     ToolResponse,
     ToolUpdate,
 )
@@ -453,4 +454,76 @@ async def get_community_tools(
         "page": page,
         "per_page": per_page,
         "has_more": end < len(tools),
+    }
+
+
+# ============== Mention History ==============
+
+
+@app.get(f"{settings.api_prefix}/mentions", response_model=list[ToolMentionResponse])
+async def get_mentions(
+    tool: Optional[str] = Query(None, description="Filter by tool slug"),
+    community: Optional[str] = Query(None, description="Filter by community slug"),
+    limit: int = Query(50, ge=1, le=200),
+    db: CommunitiesDB = Depends(get_communities_db),
+):
+    """
+    Get mention history with timestamps.
+    
+    Each mention records when a tool was discussed in a community.
+    """
+    mentions = db.get_mention_history(
+        tool_slug=tool,
+        community_slug=community,
+        limit=limit,
+    )
+    return [ToolMentionResponse(**m) for m in mentions]
+
+
+@app.get(f"{settings.api_prefix}/tools/{{slug}}/mentions")
+async def get_tool_mentions(
+    slug: str,
+    community: Optional[str] = Query(None, description="Filter by community"),
+    limit: int = Query(50, ge=1, le=200),
+    tools_db: ToolsDB = Depends(get_tools_db),
+    communities_db: CommunitiesDB = Depends(get_communities_db),
+):
+    """Get all mentions of a specific tool with timestamps."""
+    tool = tools_db.get_tool(slug)
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Tool '{slug}' not found")
+
+    mentions = communities_db.get_mention_history(
+        tool_slug=slug,
+        community_slug=community,
+        limit=limit,
+    )
+
+    return {
+        "tool": slug,
+        "mentions": mentions,
+        "total": len(mentions),
+    }
+
+
+@app.get(f"{settings.api_prefix}/communities/{{slug}}/mentions")
+async def get_community_mentions(
+    slug: str,
+    limit: int = Query(50, ge=1, le=200),
+    db: CommunitiesDB = Depends(get_communities_db),
+):
+    """Get recent tool mentions in a community with timestamps."""
+    community = db.get_community(slug)
+    if not community:
+        raise HTTPException(status_code=404, detail=f"Community '{slug}' not found")
+
+    mentions = db.get_mention_history(
+        community_slug=slug,
+        limit=limit,
+    )
+
+    return {
+        "community": slug,
+        "mentions": mentions,
+        "total": len(mentions),
     }
