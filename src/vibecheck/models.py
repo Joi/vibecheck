@@ -277,6 +277,52 @@ class WebhookResponse(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
+# ============== Articles Models ==============
+
+
+class ArticleCreate(BaseModel):
+    """Create a new article."""
+
+    url: HttpUrl
+    title: str = Field(..., min_length=1, max_length=500)
+    author: Optional[str] = None
+    published_at: Optional[datetime] = None
+    summary: Optional[str] = Field(None, max_length=2000)
+    tags: list[str] = Field(default_factory=list)
+    community: Optional[str] = None  # Community slug
+    mentioned_by: Optional[str] = None
+    source: str = "manual"
+
+
+class ArticleResponse(BaseModel):
+    """Article response."""
+
+    id: str
+    slug: str
+    title: str
+    url: str
+    author: Optional[str] = None
+    published_at: Optional[datetime] = None
+    discovered_at: Optional[datetime] = None
+    summary: Optional[str] = None
+    tags: list[str] = Field(default_factory=list)
+    community: Optional[str] = None
+    community_name: Optional[str] = None
+    mentioned_by: Optional[str] = None
+    source: Optional[str] = None
+    upvotes: int = 0
+
+
+class ArticleListResponse(BaseModel):
+    """Paginated list of articles."""
+
+    articles: list[ArticleResponse]
+    total: int
+    page: int
+    per_page: int
+    has_more: bool
+
+
 class ToolMentionResponse(BaseModel):
     """A tool mention with full context."""
 

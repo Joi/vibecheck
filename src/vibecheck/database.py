@@ -356,3 +356,129 @@ class CommunitiesDB:
 
         result = query.order("mentioned_at", desc=True).limit(limit).execute()
         return result.data or []
+
+
+class ArticlesDB:
+    """Database operations for articles."""
+
+    def __init__(self, client: Optional[Client] = None):
+        self.client = client or get_supabase_client()
+
+    def list_articles(
+        self,
+        page: int = 1,
+        per_page: int = 20,
+        community: Optional[str] = None,
+        tag: Optional[str] = None,
+    ) -> dict:
+        """List articles with pagination and filtering."""
+        query = self.client.table("articles").select("*", count="exact")
+
+        if community:
+            query = query.eq("community_slug", community)
+        if tag:
+            query = query.contains("tags", [tag])
+
+        # Pagination
+        offset = (page - 1) * per_page
+        query = query.order("published_at", desc=True, nullsfirst=False)
+        query = query.range(offset, offset + per_page - 1)
+
+        result = query.execute()
+        total = result.count or 0
+
+        return {
+            "articles": result.data or [],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "has_more": offset + per_page < total,
+        }
+
+    def get_article(self, slug: str) -> Optional[dict]:
+        """Get an article by slug."""
+        result = (
+            self.client.table("articles")
+            .select("*")
+            .eq("slug", slug)
+            .single()
+            .execute()
+        )
+        return result.data
+
+    def get_article_by_url(self, url: str) -> Optional[dict]:
+        """Get an article by URL."""
+        result = (
+            self.client.table("articles")
+            .select("*")
+            .eq("url", url)
+            .maybe_single()
+            .execute()
+        )
+        return result.data
+
+    def create_article(self, data: dict) -> dict:
+        """Create a new article."""
+        # Generate slug from title if not provided
+        if "slug" not in data:
+            import re
+            slug = data["title"].lower()
+            slug = re.sub(r'[^a-z0-9]+', '-', slug)
+            slug = slug.strip('-')[:100]
+            data["slug"] = slug
+
+        # Check for existing by URL
+        existing = self.get_article_by_url(data.get("url", ""))
+        if existing:
+            # Update existing instead
+            return self.update_article(existing["slug"], data)
+
+        result = self.client.table("articles").insert(data).execute()
+        return result.data[0]
+
+    def update_article(self, slug: str, data: dict) -> dict:
+        """Update an existing article."""
+        result = (
+            self.client.table("articles")
+            .update(data)
+            .eq("slug", slug)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    def upvote_article(self, slug: str) -> dict:
+        """Increment upvote count for an article."""
+        article = self.get_article(slug)
+        if not article:
+            raise ValueError(f"Article '{slug}' not found")
+
+        new_count = (article.get("upvotes") or 0) + 1
+        return self.update_article(slug, {"upvotes": new_count})
+
+    def search_articles(self, query: str, limit: int = 20) -> list[dict]:
+        """Search articles by title or summary."""
+        # Simple text search using ilike
+        result = (
+            self.client.table("articles")
+            .select("*")
+            .or_(f"title.ilike.%{query}%,summary.ilike.%{query}%")
+            .order("published_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data or []
+
+    def get_recent_articles(self, limit: int = 10, community: Optional[str] = None) -> list[dict]:
+        """Get most recent articles."""
+        query = self.client.table("articles").select("*")
+        
+        if community:
+            query = query.eq("community_slug", community)
+        
+        result = (
+            query
+            .order("discovered_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data or []

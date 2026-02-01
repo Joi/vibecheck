@@ -33,11 +33,13 @@ GET /api/v1/tools/{slug}
 |--------|----------|-------------|
 | GET | /api/v1/tools | List all tools |
 | GET | /api/v1/tools/{slug} | Get tool details |
+| GET | /api/v1/articles | List articles about vibe coding |
+| GET | /api/v1/articles/recent | Recent articles |
 | GET | /api/v1/search?q={query} | Search tools |
 | GET | /api/v1/categories | List categories |
 | GET | /api/v1/communities | List communities |
-| GET | /api/v1/communities/{slug}/mentions | Recent mentions |
 | POST | /api/v1/tools | Add a tool |
+| POST | /api/v1/articles | Add an article |
 | POST | /api/v1/ingest | Record a mention |
 
 ## Categories

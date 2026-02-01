@@ -6,8 +6,11 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .database import CategoriesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
+from .database import ArticlesDB, CategoriesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
 from .models import (
+    ArticleCreate,
+    ArticleListResponse,
+    ArticleResponse,
     CategoryResponse,
     CommunityResponse,
     EvaluationCreate,
@@ -661,3 +664,92 @@ async def ingest_batch(
         skipped=total_skipped,
         errors=all_errors[:10],  # Limit error messages
     )
+
+
+# ============== Articles ==============
+
+
+def get_articles_db():
+    return ArticlesDB()
+
+
+@app.get(f"{settings.api_prefix}/articles", response_model=ArticleListResponse)
+async def list_articles(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    community: Optional[str] = None,
+    tag: Optional[str] = None,
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """List articles about vibe coding, AI tools, and related topics."""
+    result = articles_db.list_articles(
+        page=page,
+        per_page=per_page,
+        community=community,
+        tag=tag,
+    )
+    return ArticleListResponse(**result)
+
+
+@app.get(f"{settings.api_prefix}/articles/recent")
+async def recent_articles(
+    limit: int = Query(10, ge=1, le=50),
+    community: Optional[str] = None,
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """Get most recently discovered articles."""
+    articles = articles_db.get_recent_articles(limit=limit, community=community)
+    return {"articles": articles, "total": len(articles)}
+
+
+@app.get(f"{settings.api_prefix}/articles/search")
+async def search_articles(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(20, ge=1, le=100),
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """Search articles by title or summary."""
+    results = articles_db.search_articles(query=q, limit=limit)
+    return {"results": results, "query": q, "total": len(results)}
+
+
+@app.get(f"{settings.api_prefix}/articles/{{slug}}", response_model=ArticleResponse)
+async def get_article(
+    slug: str,
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """Get article details by slug."""
+    article = articles_db.get_article(slug)
+    if not article:
+        raise HTTPException(status_code=404, detail=f"Article '{slug}' not found")
+    return ArticleResponse(**article)
+
+
+@app.post(f"{settings.api_prefix}/articles", response_model=ArticleResponse)
+async def create_article(
+    article: ArticleCreate,
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """Add a new article about vibe coding / AI tools."""
+    data = article.model_dump(exclude_none=True)
+    data["url"] = str(data["url"])  # Convert HttpUrl to string
+    
+    if article.community:
+        data["community_slug"] = article.community
+        del data["community"]
+    
+    result = articles_db.create_article(data)
+    return ArticleResponse(**result)
+
+
+@app.post(f"{settings.api_prefix}/articles/{{slug}}/upvote")
+async def upvote_article(
+    slug: str,
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """Upvote an article."""
+    try:
+        article = articles_db.upvote_article(slug)
+        return {"slug": slug, "upvotes": article.get("upvotes", 0)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
