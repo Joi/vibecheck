@@ -23,6 +23,9 @@ from .models import (
     ToolMentionResponse,
     ToolResponse,
     ToolUpdate,
+    WebhookBatchIngest,
+    WebhookResponse,
+    WebhookToolMention,
 )
 
 settings = get_settings()
@@ -527,3 +530,134 @@ async def get_community_mentions(
         "mentions": mentions,
         "total": len(mentions),
     }
+
+
+# ============== Webhooks / Integration ==============
+
+
+@app.post(f"{settings.api_prefix}/ingest", response_model=WebhookResponse)
+async def ingest_tool_mention(
+    mention: WebhookToolMention,
+    tools_db: ToolsDB = Depends(get_tools_db),
+    communities_db: CommunitiesDB = Depends(get_communities_db),
+):
+    """
+    Ingest a single tool mention from external system (ai-wiki, etc.).
+    
+    If tool doesn't exist, creates it. Records the mention with timestamp.
+    """
+    errors = []
+    created = 0
+    updated = 0
+    
+    # Find or create tool
+    tool = None
+    if mention.tool_slug:
+        tool = tools_db.get_tool(mention.tool_slug)
+    
+    if not tool:
+        # Try to find by name (fuzzy match could be added later)
+        # For now, create new tool
+        slug = mention.tool_slug or mention.tool_name.lower().replace(" ", "-").replace("_", "-")
+        slug = "".join(c for c in slug if c.isalnum() or c == "-")
+        
+        try:
+            tool = tools_db.create_tool({
+                "slug": slug,
+                "name": mention.tool_name,
+                "url": mention.tool_url,
+                "github_url": mention.github_url,
+                "source": mention.source,
+            })
+            created = 1
+        except Exception as e:
+            # Tool might already exist with different slug
+            errors.append(f"Failed to create tool: {str(e)}")
+            return WebhookResponse(received=1, created=0, updated=0, skipped=1, errors=errors)
+    
+    # Record the mention
+    try:
+        communities_db.record_mention(
+            tool_id=tool["id"],
+            community_slug=mention.community,
+            mentioned_at=mention.mentioned_at.isoformat() if mention.mentioned_at else None,
+            context_snippet=mention.context_snippet,
+            sentiment=mention.sentiment.value if mention.sentiment else None,
+        )
+        updated = 1
+    except Exception as e:
+        errors.append(f"Failed to record mention: {str(e)}")
+    
+    return WebhookResponse(
+        received=1,
+        created=created,
+        updated=updated,
+        skipped=0,
+        errors=errors,
+    )
+
+
+@app.post(f"{settings.api_prefix}/ingest/batch", response_model=WebhookResponse)
+async def ingest_batch(
+    batch: WebhookBatchIngest,
+    tools_db: ToolsDB = Depends(get_tools_db),
+    communities_db: CommunitiesDB = Depends(get_communities_db),
+):
+    """
+    Batch ingest multiple tool mentions.
+    
+    Useful for importing from chat exports or syncing from ai-wiki.
+    """
+    total_created = 0
+    total_updated = 0
+    total_skipped = 0
+    all_errors = []
+    
+    for mention in batch.mentions:
+        # Find or create tool
+        tool = None
+        if mention.tool_slug:
+            tool = tools_db.get_tool(mention.tool_slug)
+        
+        if not tool:
+            slug = mention.tool_slug or mention.tool_name.lower().replace(" ", "-").replace("_", "-")
+            slug = "".join(c for c in slug if c.isalnum() or c == "-")
+            
+            existing = tools_db.get_tool(slug)
+            if existing:
+                tool = existing
+            else:
+                try:
+                    tool = tools_db.create_tool({
+                        "slug": slug,
+                        "name": mention.tool_name,
+                        "url": mention.tool_url,
+                        "github_url": mention.github_url,
+                        "source": batch.source or mention.source,
+                    })
+                    total_created += 1
+                except Exception as e:
+                    all_errors.append(f"Tool '{mention.tool_name}': {str(e)}")
+                    total_skipped += 1
+                    continue
+        
+        # Record mention
+        try:
+            communities_db.record_mention(
+                tool_id=tool["id"],
+                community_slug=mention.community,
+                mentioned_at=mention.mentioned_at.isoformat() if mention.mentioned_at else None,
+                context_snippet=mention.context_snippet,
+                sentiment=mention.sentiment.value if mention.sentiment else None,
+            )
+            total_updated += 1
+        except Exception as e:
+            all_errors.append(f"Mention for '{mention.tool_name}': {str(e)}")
+    
+    return WebhookResponse(
+        received=len(batch.mentions),
+        created=total_created,
+        updated=total_updated,
+        skipped=total_skipped,
+        errors=all_errors[:10],  # Limit error messages
+    )

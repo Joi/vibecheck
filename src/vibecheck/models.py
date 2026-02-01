@@ -240,6 +240,43 @@ class ToolMention(BaseModel):
     community: Optional[str] = None  # Community slug where mentioned
 
 
+# ============== Webhook/Integration Models ==============
+
+
+class WebhookToolMention(BaseModel):
+    """Incoming tool mention from external system (ai-wiki, etc.)."""
+
+    tool_slug: Optional[str] = None  # If known
+    tool_name: str  # Required - we'll fuzzy match if no slug
+    tool_url: Optional[str] = None
+    github_url: Optional[str] = None
+    community: str  # Required - which community this came from
+    mentioned_at: Optional[datetime] = None
+    context_snippet: Optional[str] = Field(None, max_length=1000)
+    sentiment: Optional[Sentiment] = None
+    source: str = "webhook"  # e.g., "ai-wiki", "slack", "manual"
+    source_doc_id: Optional[str] = None  # ID in source system for linking back
+    source_doc_url: Optional[str] = None  # URL to source document
+
+
+class WebhookBatchIngest(BaseModel):
+    """Batch ingest multiple tool mentions."""
+
+    mentions: list[WebhookToolMention]
+    source: str = "webhook"
+    deduplicate: bool = True  # Skip if same tool+community+timestamp exists
+
+
+class WebhookResponse(BaseModel):
+    """Response from webhook ingestion."""
+
+    received: int
+    created: int
+    updated: int
+    skipped: int
+    errors: list[str] = Field(default_factory=list)
+
+
 class ToolMentionResponse(BaseModel):
     """A tool mention with full context."""
 
