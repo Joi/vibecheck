@@ -6,15 +6,17 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .database import CategoriesDB, EvaluationsDB, LinksDB, ToolsDB
+from .database import CategoriesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
 from .models import (
     CategoryResponse,
+    CommunityResponse,
     EvaluationCreate,
     EvaluationResponse,
     LinkCreate,
     LinkResponse,
     SearchResponse,
     SearchResult,
+    ToolCommunityResponse,
     ToolCreate,
     ToolDetailResponse,
     ToolListResponse,
@@ -60,6 +62,10 @@ def get_links_db() -> LinksDB:
 
 def get_categories_db() -> CategoriesDB:
     return CategoriesDB()
+
+
+def get_communities_db() -> CommunitiesDB:
+    return CommunitiesDB()
 
 
 # ============== Health ==============
@@ -372,4 +378,79 @@ async def bot_recommend(
         "use_case": use_case,
         "recommendations": recommended,
         "count": len(recommended),
+    }
+
+
+# ============== Communities ==============
+
+
+@app.get(f"{settings.api_prefix}/communities", response_model=list[CommunityResponse])
+async def list_communities(db: CommunitiesDB = Depends(get_communities_db)):
+    """List all communities with tool counts."""
+    communities = db.list_communities()
+    return [CommunityResponse(**c) for c in communities]
+
+
+@app.get(f"{settings.api_prefix}/communities/{{slug}}")
+async def get_community(
+    slug: str,
+    db: CommunitiesDB = Depends(get_communities_db),
+):
+    """Get a community with its tools."""
+    community = db.get_community(slug)
+    if not community:
+        raise HTTPException(status_code=404, detail=f"Community '{slug}' not found")
+
+    tools = db.get_tools_for_community(slug)
+
+    return {
+        "community": CommunityResponse(**community),
+        "tools": [
+            {
+                "tool": t.get("tools", {}),
+                "first_mentioned": t.get("first_mentioned"),
+                "mention_count": t.get("mention_count", 0),
+                "sentiment_summary": t.get("sentiment_summary"),
+            }
+            for t in tools
+        ],
+        "tool_count": len(tools),
+    }
+
+
+@app.get(f"{settings.api_prefix}/communities/{{slug}}/tools")
+async def get_community_tools(
+    slug: str,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=100),
+    db: CommunitiesDB = Depends(get_communities_db),
+):
+    """Get tools discussed in a community."""
+    community = db.get_community(slug)
+    if not community:
+        raise HTTPException(status_code=404, detail=f"Community '{slug}' not found")
+
+    tools = db.get_tools_for_community(slug)
+
+    # Paginate
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated = tools[start:end]
+
+    return {
+        "community": slug,
+        "tools": [
+            {
+                "slug": t.get("tools", {}).get("slug"),
+                "name": t.get("tools", {}).get("name"),
+                "github_url": t.get("tools", {}).get("github_url"),
+                "mention_count": t.get("mention_count", 0),
+                "sentiment_summary": t.get("sentiment_summary"),
+            }
+            for t in paginated
+        ],
+        "total": len(tools),
+        "page": page,
+        "per_page": per_page,
+        "has_more": end < len(tools),
     }

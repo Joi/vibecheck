@@ -49,6 +49,7 @@ class ToolCreate(BaseModel):
     url: Optional[HttpUrl] = None
     github_url: Optional[HttpUrl] = None
     categories: list[str] = Field(default_factory=list)
+    communities: list[str] = Field(default_factory=list)  # ["agi", "henkaku", "dg"]
     description: Optional[str] = None
 
 
@@ -121,6 +122,24 @@ class LinkResponse(BaseModel):
     created_at: datetime
 
 
+class CommunityResponse(BaseModel):
+    """Community where tools are discussed."""
+
+    slug: str
+    name: str
+    description: Optional[str] = None
+    tool_count: int = 0
+
+
+class ToolCommunityResponse(BaseModel):
+    """Tool's presence in a community."""
+
+    community: CommunityResponse
+    first_mentioned: Optional[datetime] = None
+    mention_count: int = 0
+    sentiment_summary: Optional[str] = None
+
+
 class ToolResponse(BaseModel):
     """Tool with all related data."""
 
@@ -138,6 +157,9 @@ class ToolResponse(BaseModel):
     github_open_issues: Optional[int] = None
     github_license: Optional[str] = None
 
+    # Communities where this tool is discussed
+    communities: list[str] = []  # Just slugs for list view
+
     # Metadata
     first_seen: datetime
     source: Optional[str] = None
@@ -150,6 +172,7 @@ class ToolDetailResponse(ToolResponse):
 
     evaluations: list[EvaluationResponse] = []
     links: list[LinkResponse] = []
+    community_details: list[ToolCommunityResponse] = []  # Full community info
     mention_count: int = 0
 
     # Aggregated evaluation stats
@@ -214,6 +237,7 @@ class ToolMention(BaseModel):
     context_snippet: Optional[str] = None  # Sanitized
     sentiment: Optional[Sentiment] = None
     mention_date: Optional[datetime] = None
+    community: Optional[str] = None  # Community slug where mentioned
 
 
 class ImportBatchCreate(BaseModel):

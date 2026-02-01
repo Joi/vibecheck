@@ -199,3 +199,114 @@ class CategoriesDB:
             cat["tool_count"] = count_result.count or 0
 
         return categories
+
+
+class CommunitiesDB:
+    """Database operations for communities."""
+
+    def __init__(self, client: Optional[Client] = None):
+        self.client = client or get_supabase_client()
+
+    def list_communities(self) -> list[dict]:
+        """List all communities with tool counts."""
+        result = self.client.table("communities").select("*").order("name").execute()
+        communities = result.data or []
+
+        # Get tool counts per community
+        for comm in communities:
+            count_result = (
+                self.client.table("tool_communities")
+                .select("id", count="exact")
+                .eq("community_id", comm["id"])
+                .execute()
+            )
+            comm["tool_count"] = count_result.count or 0
+
+        return communities
+
+    def get_community(self, slug: str) -> Optional[dict]:
+        """Get a community by slug."""
+        result = (
+            self.client.table("communities")
+            .select("*")
+            .eq("slug", slug)
+            .single()
+            .execute()
+        )
+        return result.data
+
+    def get_tools_for_community(self, community_slug: str) -> list[dict]:
+        """Get all tools discussed in a community."""
+        # First get community ID
+        community = self.get_community(community_slug)
+        if not community:
+            return []
+
+        # Get tool_communities with tool info
+        result = (
+            self.client.table("tool_communities")
+            .select("*, tools(*)")
+            .eq("community_id", community["id"])
+            .order("mention_count", desc=True)
+            .execute()
+        )
+        return result.data or []
+
+    def get_communities_for_tool(self, tool_id: str) -> list[dict]:
+        """Get all communities where a tool is discussed."""
+        result = (
+            self.client.table("tool_communities")
+            .select("*, communities(*)")
+            .eq("tool_id", tool_id)
+            .execute()
+        )
+        return result.data or []
+
+    def add_tool_to_community(
+        self,
+        tool_id: str,
+        community_slug: str,
+        sentiment_summary: Optional[str] = None,
+    ) -> dict:
+        """Add or update a tool's presence in a community."""
+        community = self.get_community(community_slug)
+        if not community:
+            raise ValueError(f"Community '{community_slug}' not found")
+
+        # Upsert tool_communities
+        data = {
+            "tool_id": tool_id,
+            "community_id": community["id"],
+            "mention_count": 1,
+        }
+        if sentiment_summary:
+            data["sentiment_summary"] = sentiment_summary
+
+        result = (
+            self.client.table("tool_communities")
+            .upsert(data, on_conflict="tool_id,community_id")
+            .execute()
+        )
+        return result.data[0]
+
+    def increment_mention_count(self, tool_id: str, community_slug: str) -> None:
+        """Increment mention count for a tool in a community."""
+        community = self.get_community(community_slug)
+        if not community:
+            return
+
+        # Get current record
+        current = (
+            self.client.table("tool_communities")
+            .select("*")
+            .eq("tool_id", tool_id)
+            .eq("community_id", community["id"])
+            .single()
+            .execute()
+        )
+
+        if current.data:
+            # Update count
+            self.client.table("tool_communities").update(
+                {"mention_count": current.data["mention_count"] + 1}
+            ).eq("id", current.data["id"]).execute()
