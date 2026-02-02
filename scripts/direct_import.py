@@ -1,34 +1,31 @@
 #!/usr/bin/env python3
-"""Direct database import bypassing the API."""
-import json
-import os
-import subprocess
+"""
+Direct database import bypassing the API.
+
+Uses kura for secrets (age-encrypted, not 1Password).
+"""
 import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add parent to path
+# Add src to path for kura import
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import psycopg2
+from vibecheck.kura import get_secret
 
-def get_db_password():
-    result = subprocess.run(
-        ['op', 'item', 'get', 'Supabase vibecheck database password', 
-         '--vault', 'Employee', '--fields', 'password', '--reveal'],
-        capture_output=True, text=True
-    )
-    return result.stdout.strip()
 
 def get_connection():
+    """Get a PostgreSQL connection to vibecheck database."""
     return psycopg2.connect(
         host="db.pycvrvounfzlrwjdmuij.supabase.co",
         port=5432,
         database="postgres",
         user="postgres",
-        password=get_db_password(),
+        password=get_secret("SUPABASE_DB_PASSWORD"),
         sslmode="require"
     )
+
 
 def import_tools(tools: list[dict], community_slug: str = 'agi'):
     """Import tools directly to database."""
@@ -71,7 +68,7 @@ def import_tools(tools: list[dict], community_slug: str = 'agi'):
                 RETURNING id
             """, (
                 slug, name, tool.get('url'), tool.get('github_url'),
-                tool.get('source', 'whatsapp-import'),
+                tool.get('source', 'direct-import'),
                 tool.get('mentioned_at', datetime.now().isoformat())
             ))
             tool_id = cur.fetchone()[0]
@@ -108,6 +105,7 @@ def import_tools(tools: list[dict], community_slug: str = 'agi'):
     
     print(f"\n✅ Import complete: {created} created, {updated} updated")
     return created, updated
+
 
 if __name__ == "__main__":
     # Test

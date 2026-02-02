@@ -2,44 +2,39 @@
 """
 Vibecheck Database Helper
 
-Direct PostgreSQL access to Supabase via 1Password secrets.
+Direct PostgreSQL access to Supabase via kura (age-encrypted secrets).
 No need to use the Supabase dashboard SQL editor.
 
 Usage:
     # Interactive SQL
-    ./vibecheck_db.py "SELECT * FROM tools LIMIT 5"
+    uv run python scripts/vibecheck_db.py "SELECT * FROM tools LIMIT 5"
+    
+    # Quick stats
+    uv run python scripts/vibecheck_db.py
     
     # From Python
     from vibecheck_db import get_connection, run_sql
     conn = get_connection()
     results = run_sql("SELECT COUNT(*) FROM tools")
 """
-import subprocess
 import sys
+from pathlib import Path
 
+# Add src to path for kura import
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-def get_db_password() -> str:
-    """Get database password from 1Password."""
-    result = subprocess.run(
-        ['op', 'item', 'get', 'Supabase vibecheck database password',
-         '--vault', 'Employee', '--fields', 'password', '--reveal'],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Failed to get password from 1Password: {result.stderr}")
-    return result.stdout.strip()
+import psycopg2
+from vibecheck.kura import get_secret
 
 
 def get_connection():
     """Get a PostgreSQL connection to vibecheck database."""
-    import psycopg2
-    
     return psycopg2.connect(
         host="db.pycvrvounfzlrwjdmuij.supabase.co",
         port=5432,
         database="postgres",
         user="postgres",
-        password=get_db_password(),
+        password=get_secret("SUPABASE_DB_PASSWORD"),
         sslmode="require"
     )
 
