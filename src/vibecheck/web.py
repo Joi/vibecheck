@@ -97,14 +97,15 @@ async def home(
         per_page = 24
         result = tools_db.list_tools(page=page, per_page=per_page, sort_by="created_at", sort_order="desc")
         
-        # Add communities to each tool (with error handling)
+        # Get communities for all tools in ONE query (not N+1)
         tools = result.get("tools", [])
+        tool_ids = [t["id"] for t in tools]
+        communities_by_tool = communities_db.get_communities_for_tools_batch(tool_ids)
+        
+        # Add communities to each tool
         for tool in tools:
-            try:
-                communities = communities_db.get_communities_for_tool(tool["id"])
-                tool["communities"] = [c["communities"]["name"] for c in communities if c.get("communities")]
-            except Exception:
-                tool["communities"] = []
+            tool_communities = communities_by_tool.get(tool["id"], [])
+            tool["communities"] = [c["name"] for c in tool_communities]
         
         communities = communities_db.list_communities()
         
@@ -143,10 +144,14 @@ async def tools_list(
     per_page = 24
     result = tools_db.list_tools(page=page, per_page=per_page, category=category, sort_by="created_at", sort_order="desc")
     
+    # Get communities for all tools in ONE query (not N+1)
     tools = result.get("tools", [])
+    tool_ids = [t["id"] for t in tools]
+    communities_by_tool = communities_db.get_communities_for_tools_batch(tool_ids)
+    
     for tool in tools:
-        communities = communities_db.get_communities_for_tool(tool["id"])
-        tool["communities"] = [c["communities"]["name"] for c in communities if c.get("communities")]
+        tool_communities = communities_by_tool.get(tool["id"], [])
+        tool["communities"] = [c["name"] for c in tool_communities]
     
     communities = communities_db.list_communities()
     articles_result = articles_db.list_articles(page=1, per_page=1)

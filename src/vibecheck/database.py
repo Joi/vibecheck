@@ -274,6 +274,32 @@ class CommunitiesDB:
         )
         return result.data or []
 
+    def get_communities_for_tools_batch(self, tool_ids: list[str]) -> dict[str, list[dict]]:
+        """Get communities for multiple tools in one query.
+        
+        Returns a dict mapping tool_id -> list of community info.
+        """
+        if not tool_ids:
+            return {}
+        
+        result = (
+            self.client.table("tool_communities")
+            .select("tool_id, communities(slug, name)")
+            .in_("tool_id", tool_ids)
+            .execute()
+        )
+        
+        # Group by tool_id
+        by_tool: dict[str, list[dict]] = {}
+        for row in result.data or []:
+            tid = row.get("tool_id")
+            if tid not in by_tool:
+                by_tool[tid] = []
+            if row.get("communities"):
+                by_tool[tid].append(row["communities"])
+        
+        return by_tool
+
     def add_tool_to_community(
         self,
         tool_id: str,
