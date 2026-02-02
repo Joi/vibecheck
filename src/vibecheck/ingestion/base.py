@@ -56,6 +56,17 @@ class ExtractedTool:
 
 
 @dataclass
+class ExtractedArticle:
+    """An article/link extracted from a message."""
+
+    url: str
+    title: Optional[str] = None  # Will be fetched later if not available
+    context_snippet: Optional[str] = None
+    mention_date: Optional[datetime] = None
+    source_community: Optional[str] = None
+
+
+@dataclass
 class IngestionResult:
     """Result of an ingestion operation."""
 
@@ -63,6 +74,7 @@ class IngestionResult:
     source_name: Optional[str]
     message_count: int
     tools_found: list[ExtractedTool]
+    articles_found: list[ExtractedArticle] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
 

@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from .base import BaseIngester, ExtractedTool, IngestionResult
+from .base import BaseIngester, ExtractedArticle, ExtractedTool, IngestionResult
 
 
 class WhatsAppIngester(BaseIngester):
@@ -34,6 +34,11 @@ class WhatsAppIngester(BaseIngester):
     # Pattern 3: DD/MM/YYYY, HH:MM - Name: Message (European format)
     PATTERN_3 = re.compile(
         r"^(\d{1,2}/\d{1,2}/\d{4}),?\s+(\d{1,2}:\d{2})\s*-\s*([^:]+):\s*(.+)",
+    )
+
+    # Pattern 4: [YYYY/MM/DD, HH:MM:SS] Name: Message (ISO-like format)
+    PATTERN_4 = re.compile(
+        r"^\[(\d{4}/\d{1,2}/\d{1,2}),?\s+(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+):\s*(.+)",
     )
 
     def parse(self, content: str, source_name: Optional[str] = None) -> IngestionResult:
@@ -68,10 +73,39 @@ class WhatsAppIngester(BaseIngester):
             messages.append(current_message)
 
         tools_found = []
+        articles_found = []
+        seen_urls = set()  # Deduplicate URLs
 
         for msg in messages:
             try:
                 text = msg["text"]
+                urls = self.extract_urls(text)
+                
+                # Extract articles from "other" URLs (non-tool URLs)
+                for url in urls["other"]:
+                    # Skip duplicates and common non-article URLs
+                    if url in seen_urls:
+                        continue
+                    if any(skip in url.lower() for skip in [
+                        "youtube.com/watch", "youtu.be", "twitter.com", "x.com",
+                        "instagram.com", "facebook.com", "tiktok.com", "linkedin.com/posts",
+                        "whatsapp.com", "t.me", "discord.gg", "meet.google.com", "zoom.us"
+                    ]):
+                        continue
+                    
+                    seen_urls.add(url)
+                    raw_snippet = f"{msg.get('sender', 'Unknown')}: {text}" if msg.get("sender") else text
+                    snippet = self.sanitize_snippet(raw_snippet)
+                    
+                    articles_found.append(ExtractedArticle(
+                        url=url,
+                        title=None,  # Will be fetched later
+                        context_snippet=snippet,
+                        mention_date=msg.get("datetime"),
+                        source_community=source_name,
+                    ))
+                
+                # Extract tools (existing logic)
                 if not self.is_tool_related(text):
                     continue
 
@@ -90,12 +124,13 @@ class WhatsAppIngester(BaseIngester):
             source_name=source_name,
             message_count=len(messages),
             tools_found=tools_found,
+            articles_found=articles_found,
             errors=errors,
         )
 
     def _parse_line(self, line: str) -> Optional[dict]:
         """Try to parse a line as a WhatsApp message header."""
-        for pattern in [self.PATTERN_1, self.PATTERN_2, self.PATTERN_3]:
+        for pattern in [self.PATTERN_1, self.PATTERN_2, self.PATTERN_3, self.PATTERN_4]:
             match = pattern.match(line)
             if match:
                 date_str, time_str, sender, text = match.groups()
@@ -131,6 +166,9 @@ class WhatsAppIngester(BaseIngester):
             "%m/%d/%Y %H:%M",
             "%d/%m/%y %H:%M",
             "%d/%m/%Y %H:%M",
+            # ISO-like formats (YYYY/MM/DD)
+            "%Y/%m/%d %H:%M:%S",
+            "%Y/%m/%d %H:%M",
         ]
 
         combined = f"{date_str} {time_str}"
