@@ -1,6 +1,7 @@
 """Web UI routes for vibecheck."""
 
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +10,21 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .database import ArticlesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
+
+# Simple in-memory cache with TTL
+_cache: dict = {}
+_cache_ttl = 300  # 5 minutes
+
+def get_cached(key: str, fetch_fn, ttl: int = _cache_ttl):
+    """Get value from cache or fetch and cache it."""
+    now = time.time()
+    if key in _cache:
+        value, expires = _cache[key]
+        if now < expires:
+            return value
+    value = fetch_fn()
+    _cache[key] = (value, now + ttl)
+    return value
 
 router = APIRouter()
 
@@ -107,11 +123,12 @@ async def home(
             tool_communities = communities_by_tool.get(tool["id"], [])
             tool["communities"] = [c["name"] for c in tool_communities]
         
-        communities = communities_db.list_communities()
-        
-        # Get article count
-        articles_result = articles_db.list_articles(page=1, per_page=1)
-        total_articles = articles_result.get("total", 0)
+        # Cache communities list and article count (don't change often)
+        communities = get_cached("communities_list", communities_db.list_communities)
+        total_articles = get_cached(
+            "articles_total",
+            lambda: articles_db.list_articles(page=1, per_page=1).get("total", 0)
+        )
         
         return get_templates().TemplateResponse("index.html", {
             "request": request,
@@ -153,15 +170,19 @@ async def tools_list(
         tool_communities = communities_by_tool.get(tool["id"], [])
         tool["communities"] = [c["name"] for c in tool_communities]
     
-    communities = communities_db.list_communities()
-    articles_result = articles_db.list_articles(page=1, per_page=1)
+    # Cache communities list and article count
+    communities = get_cached("communities_list", communities_db.list_communities)
+    total_articles = get_cached(
+        "articles_total",
+        lambda: articles_db.list_articles(page=1, per_page=1).get("total", 0)
+    )
     
     return get_templates().TemplateResponse("index.html", {
         "request": request,
         "active_page": "tools",
         "tools": tools,
         "total_tools": result.get("total", 0),
-        "total_articles": articles_result.get("total", 0),
+        "total_articles": total_articles,
         "communities": communities,
         "page": page,
         "has_more": page * per_page < result.get("total", 0),
