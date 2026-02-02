@@ -252,3 +252,25 @@ async def debug_paths():
             results["paths_checked"][str(p)] = {"error": str(e)}
     
     return results
+
+
+@router.get("/debug/template", response_class=HTMLResponse)
+async def debug_template(request: Request):
+    """Test template rendering with minimal data."""
+    try:
+        return get_templates().TemplateResponse("index.html", {
+            "request": request,
+            "active_page": "tools",
+            "tools": [],
+            "total_tools": 0,
+            "total_articles": 0,
+            "communities": [],
+            "page": 1,
+            "has_more": False,
+        })
+    except Exception as e:
+        import traceback
+        return JSONResponse({
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
