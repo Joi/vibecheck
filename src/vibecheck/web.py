@@ -61,31 +61,41 @@ async def home(
     articles_db: ArticlesDB = Depends(get_articles_db),
 ):
     """Homepage with tools list."""
-    per_page = 24
-    result = tools_db.list_tools(page=page, per_page=per_page, sort_by="created_at", sort_order="desc")
-    
-    # Add communities to each tool
-    tools = result.get("tools", [])
-    for tool in tools:
-        communities = communities_db.get_communities_for_tool(tool["id"])
-        tool["communities"] = [c["communities"]["name"] for c in communities if c.get("communities")]
-    
-    communities = communities_db.list_communities()
-    
-    # Get article count
-    articles_result = articles_db.list_articles(page=1, per_page=1)
-    total_articles = articles_result.get("total", 0)
-    
-    return get_templates().TemplateResponse("index.html", {
-        "request": request,
-        "active_page": "tools",
-        "tools": tools,
-        "total_tools": result.get("total", 0),
-        "total_articles": total_articles,
-        "communities": communities,
-        "page": page,
-        "has_more": page * per_page < result.get("total", 0),
-    })
+    try:
+        per_page = 24
+        result = tools_db.list_tools(page=page, per_page=per_page, sort_by="created_at", sort_order="desc")
+        
+        # Add communities to each tool (with error handling)
+        tools = result.get("tools", [])
+        for tool in tools:
+            try:
+                communities = communities_db.get_communities_for_tool(tool["id"])
+                tool["communities"] = [c["communities"]["name"] for c in communities if c.get("communities")]
+            except Exception:
+                tool["communities"] = []
+        
+        communities = communities_db.list_communities()
+        
+        # Get article count
+        articles_result = articles_db.list_articles(page=1, per_page=1)
+        total_articles = articles_result.get("total", 0)
+        
+        return get_templates().TemplateResponse("index.html", {
+            "request": request,
+            "active_page": "tools",
+            "tools": tools,
+            "total_tools": result.get("total", 0),
+            "total_articles": total_articles,
+            "communities": communities,
+            "page": page,
+            "has_more": page * per_page < result.get("total", 0),
+        })
+    except Exception as e:
+        import traceback
+        return JSONResponse({
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
 
 
 @router.get("/tools", response_class=HTMLResponse)
