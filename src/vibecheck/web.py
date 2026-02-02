@@ -163,34 +163,51 @@ async def tool_detail(
     communities_db: CommunitiesDB = Depends(get_communities_db),
 ):
     """Tool detail page."""
-    tool = tools_db.get_tool(slug)
-    if not tool:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    
-    # Get related data
-    evaluations = tools_db.get_evaluations_for_tool(tool["id"])
-    links = tools_db.get_links_for_tool(tool["id"])
-    communities = communities_db.get_communities_for_tool(tool["id"])
-    mentions = tools_db.get_tool_mentions(tool["id"])
-    
-    # Extract community info
-    community_list = []
-    for c in communities:
-        if c.get("communities"):
-            community_list.append({
-                "slug": c["communities"]["slug"],
-                "name": c["communities"]["name"],
-            })
-    
-    return get_templates().TemplateResponse("tool.html", {
-        "request": request,
-        "active_page": "tools",
-        "tool": tool,
-        "evaluations": evaluations,
-        "links": links,
-        "communities": community_list,
-        "mentions": mentions,
-    })
+    try:
+        tool = tools_db.get_tool(slug)
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found")
+        
+        # Get related data (with error handling)
+        evaluations = tools_db.get_evaluations_for_tool(tool["id"])
+        links = tools_db.get_links_for_tool(tool["id"])
+        
+        try:
+            communities = communities_db.get_communities_for_tool(tool["id"])
+        except Exception:
+            communities = []
+        
+        try:
+            mentions = tools_db.get_tool_mentions(tool["id"])
+        except Exception:
+            mentions = []
+        
+        # Extract community info
+        community_list = []
+        for c in communities:
+            if c.get("communities"):
+                community_list.append({
+                    "slug": c["communities"]["slug"],
+                    "name": c["communities"]["name"],
+                })
+        
+        return get_templates().TemplateResponse("tool.html", {
+            "request": request,
+            "active_page": "tools",
+            "tool": tool,
+            "evaluations": evaluations,
+            "links": links,
+            "communities": community_list,
+            "mentions": mentions,
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        return JSONResponse({
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
 
 
 @router.get("/articles", response_class=HTMLResponse)
