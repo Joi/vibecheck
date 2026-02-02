@@ -49,8 +49,9 @@ class ToolCreate(BaseModel):
     url: Optional[HttpUrl] = None
     github_url: Optional[HttpUrl] = None
     categories: list[str] = Field(default_factory=list)
-    communities: list[str] = Field(default_factory=list)  # ["agi", "henkaku", "dg"]
     description: Optional[str] = None
+    # Note: communities are NOT stored in tools table - use /ingest endpoint
+    # to associate tools with communities via tool_communities join table
 
 
 class ToolUpdate(BaseModel):
