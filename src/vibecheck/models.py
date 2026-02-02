@@ -290,7 +290,7 @@ class ArticleCreate(BaseModel):
     published_at: Optional[datetime] = None
     summary: Optional[str] = Field(None, max_length=2000)
     tags: list[str] = Field(default_factory=list)
-    community: Optional[str] = None  # Community slug
+    community_slug: Optional[str] = None  # Community slug
     mentioned_by: Optional[str] = None
     source: str = "manual"
 
