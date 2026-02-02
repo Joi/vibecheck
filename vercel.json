@@ -34,7 +34,7 @@
     },
     {
       "src": "^/$",
-      "dest": "/public/index.html"
+      "dest": "api/index.py"
     },
     {
       "src": "/(.*)",
