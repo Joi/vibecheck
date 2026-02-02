@@ -25,23 +25,23 @@
 
 {% if tools %}
 <div class="cards">
-    {% for item in tools %}
+    {% for tool in tools %}
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">
-                <a href="/tools/{{ item.tool.slug }}">{{ item.tool.name }}</a>
+                <a href="/tools/{{ tool.slug }}">{{ tool.name }}</a>
             </h3>
         </div>
         <div class="card-meta">
-            {% if item.mention_count %}
-            <span>{{ item.mention_count }} mentions</span>
+            {% if tool.mention_count %}
+            <span>{{ tool.mention_count }} mentions</span>
             {% endif %}
-            {% if item.first_mentioned %}
-            <span>First mentioned {{ item.first_mentioned|format_date }}</span>
+            {% if tool.first_mentioned %}
+            <span>First mentioned {{ tool.first_mentioned|format_date }}</span>
             {% endif %}
         </div>
-        {% if item.tool.description %}
-        <p class="card-description">{{ item.tool.description }}</p>
+        {% if tool.description %}
+        <p class="card-description">{{ tool.description }}</p>
         {% endif %}
     </div>
     {% endfor %}
