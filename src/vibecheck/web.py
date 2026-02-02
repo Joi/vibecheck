@@ -213,3 +213,42 @@ async def community_detail(
         "community": community,
         "tools": tools,
     })
+
+
+@router.get("/debug/paths", response_class=JSONResponse)
+async def debug_paths():
+    """Debug endpoint to see available paths in Vercel."""
+    import os
+    from pathlib import Path
+    
+    cwd = os.getcwd()
+    file_path = Path(__file__)
+    
+    # Check various paths
+    paths_to_check = [
+        file_path.parent / "templates",
+        Path("src/vibecheck/templates"),
+        Path(cwd) / "src" / "vibecheck" / "templates",
+        Path("/var/task/src/vibecheck/templates"),
+        file_path.parent,
+        Path(cwd),
+    ]
+    
+    results = {
+        "cwd": cwd,
+        "__file__": str(file_path),
+        "templates_dir": str(templates_dir),
+        "templates_exists": templates_dir.exists(),
+        "paths_checked": {},
+    }
+    
+    for p in paths_to_check:
+        try:
+            results["paths_checked"][str(p)] = {
+                "exists": p.exists(),
+                "contents": [str(x.name) for x in p.iterdir()] if p.exists() else []
+            }
+        except Exception as e:
+            results["paths_checked"][str(p)] = {"error": str(e)}
+    
+    return results
