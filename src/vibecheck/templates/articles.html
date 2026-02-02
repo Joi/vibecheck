@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Articles{% endblock %}
+
+{% block content %}
+<h1>Articles & Resources</h1>
+<p class="subtitle">Research papers, blog posts, and discussions about AI coding tools.</p>
+
+<div class="search-box">
+    <input type="text" id="search" placeholder="Search articles..." onkeyup="filterArticles()">
+</div>
+
+{% if articles %}
+<div id="articles-list">
+    {% for article in articles %}
+    <div class="article-item" data-title="{{ article.title|lower }}" data-author="{{ (article.author or '')|lower }}">
+        <h3 class="article-title">
+            <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+        </h3>
+        {% if article.summary %}
+        <p style="color: var(--text-secondary); margin: 0.5rem 0;">{{ article.summary[:200] }}{% if article.summary|length > 200 %}...{% endif %}</p>
+        {% endif %}
+        <div class="article-meta">
+            {% if article.author %}<span>By {{ article.author }}</span>{% endif %}
+            {% if article.published_at %}<span>{{ article.published_at.strftime('%b %d, %Y') }}</span>{% endif %}
+            {% if article.source %}<span>{{ article.source }}</span>{% endif %}
+            {% if article.community_slug %}<span class="tag community" style="margin-left: 0.5rem;">{{ article.community_slug }}</span>{% endif %}
+        </div>
+        {% if article.tags %}
+        <div class="card-tags" style="margin-top: 0.75rem;">
+            {% for tag in article.tags[:5] %}
+            <span class="tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% if has_more %}
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="/articles?page={{ page + 1 }}" class="btn btn-secondary">Load More</a>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h3>No articles yet</h3>
+    <p>Articles will appear here as they're shared in community discussions.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterArticles() {
+    const query = document.getElementById('search').value.toLowerCase();
+    const items = document.querySelectorAll('.article-item');
+    
+    items.forEach(item => {
+        const title = item.dataset.title;
+        const author = item.dataset.author;
+        
+        if (title.includes(query) || author.includes(query)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -176,6 +176,18 @@ class LinksDB:
         )
         return result.data or []
 
+    def get_tool_mentions(self, tool_id: str) -> list[dict]:
+        """Get all mentions for a tool."""
+        result = (
+            self.client.table("tool_mentions")
+            .select("*")
+            .eq("tool_id", tool_id)
+            .order("mentioned_at", desc=True)
+            .limit(50)
+            .execute()
+        )
+        return result.data or []
+
 
 class CategoriesDB:
     """Database operations for categories."""

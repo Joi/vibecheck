@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
+from .web import router as web_router
 from .database import ArticlesDB, CategoriesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
 from .models import (
     ArticleCreate,
@@ -50,6 +51,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Web UI routes (must be before API routes to avoid conflicts)
+app.include_router(web_router)
 
 
 # ============== Dependencies ==============

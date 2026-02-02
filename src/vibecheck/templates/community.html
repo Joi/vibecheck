@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ community.name }}{% endblock %}
+
+{% block content %}
+<h1>{{ community.name }}</h1>
+{% if community.description %}
+<p class="subtitle">{{ community.description }}</p>
+{% endif %}
+
+{% if community.url %}
+<div style="margin-bottom: 2rem;">
+    <a href="{{ community.url }}" target="_blank" class="btn btn-primary">Visit Community →</a>
+</div>
+{% endif %}
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">{{ tools|length }}</div>
+        <div class="stat-label">Tools Discussed</div>
+    </div>
+</div>
+
+<h2>Tools from {{ community.name }}</h2>
+
+{% if tools %}
+<div class="cards">
+    {% for item in tools %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <a href="/tools/{{ item.tool.slug }}">{{ item.tool.name }}</a>
+            </h3>
+        </div>
+        <div class="card-meta">
+            {% if item.mention_count %}
+            <span>{{ item.mention_count }} mentions</span>
+            {% endif %}
+            {% if item.first_mentioned %}
+            <span>First mentioned {{ item.first_mentioned.strftime('%b %d') }}</span>
+            {% endif %}
+        </div>
+        {% if item.tool.description %}
+        <p class="card-description">{{ item.tool.description }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No tools yet</h3>
+    <p>Tools will appear here as they're discussed in this community.</p>
+</div>
+{% endif %}
+{% endblock %}

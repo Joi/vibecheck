@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Communities{% endblock %}
+
+{% block content %}
+<h1>Communities</h1>
+<p class="subtitle">AI coding communities where tools are discovered and discussed.</p>
+
+{% if communities %}
+<div class="cards">
+    {% for comm in communities %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <a href="/communities/{{ comm.slug }}">{{ comm.name }}</a>
+            </h3>
+        </div>
+        {% if comm.description %}
+        <p class="card-description">{{ comm.description }}</p>
+        {% endif %}
+        <div class="card-meta">
+            <span>{{ comm.tool_count or 0 }} tools</span>
+            {% if comm.url %}
+            <a href="{{ comm.url }}" target="_blank">Visit →</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No communities yet</h3>
+    <p>Communities will appear here as tools are tracked from different sources.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tool.name }}{% endblock %}
+
+{% block content %}
+<div class="tool-header">
+    <h1>{{ tool.name }}</h1>
+    {% if tool.description %}
+    <p class="subtitle">{{ tool.description }}</p>
+    {% endif %}
+    
+    <div class="tool-links">
+        {% if tool.url %}
+        <a href="{{ tool.url }}" target="_blank" class="btn btn-primary">Visit Website →</a>
+        {% endif %}
+        {% if tool.github_url %}
+        <a href="{{ tool.github_url }}" target="_blank" class="btn btn-secondary">GitHub</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="stats">
+    {% if tool.github_stars %}
+    <div class="stat">
+        <div class="stat-value">{{ "{:,}".format(tool.github_stars) }}</div>
+        <div class="stat-label">GitHub Stars</div>
+    </div>
+    {% endif %}
+    {% if tool.github_open_issues %}
+    <div class="stat">
+        <div class="stat-value">{{ tool.github_open_issues }}</div>
+        <div class="stat-label">Open Issues</div>
+    </div>
+    {% endif %}
+    {% if mentions %}
+    <div class="stat">
+        <div class="stat-value">{{ mentions|length }}</div>
+        <div class="stat-label">Mentions</div>
+    </div>
+    {% endif %}
+</div>
+
+{% if tool.categories %}
+<div style="margin-bottom: 2rem;">
+    <h2>Categories</h2>
+    <div class="card-tags" style="margin-top: 0.5rem;">
+        {% for cat in tool.categories %}
+        <span class="tag">{{ cat }}</span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if communities %}
+<div style="margin-bottom: 2rem;">
+    <h2>Discussed In</h2>
+    <div class="card-tags" style="margin-top: 0.5rem;">
+        {% for comm in communities %}
+        <a href="/communities/{{ comm.slug }}">
+            <span class="tag community">{{ comm.name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if evaluations %}
+<div style="margin-bottom: 2rem;">
+    <h2>Community Evaluations</h2>
+    {% for eval in evaluations %}
+    <div class="card" style="margin-top: 1rem;">
+        <div class="card-header">
+            <span>
+                {% if eval.works %}✅ Works{% else %}❌ Issues{% endif %}
+                {% if eval.actively_maintained %} • 🔄 Actively Maintained{% endif %}
+            </span>
+            <span class="card-meta">{{ eval.created_at.strftime('%b %d, %Y') if eval.created_at else '' }}</span>
+        </div>
+        {% if eval.verdict %}
+        <p><strong>Verdict:</strong> {{ eval.verdict }}</p>
+        {% endif %}
+        {% if eval.notes %}
+        <p style="color: var(--text-secondary); margin-top: 0.5rem;">{{ eval.notes }}</p>
+        {% endif %}
+        {% if eval.security_notes %}
+        <p style="color: var(--warning); margin-top: 0.5rem;">⚠️ {{ eval.security_notes }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if links %}
+<div style="margin-bottom: 2rem;">
+    <h2>Related Links</h2>
+    {% for link in links %}
+    <div class="article-item">
+        <h3 class="article-title">
+            <a href="{{ link.url }}" target="_blank">{{ link.title or link.url }}</a>
+        </h3>
+        {% if link.snippet %}
+        <p style="color: var(--text-secondary);">{{ link.snippet }}</p>
+        {% endif %}
+        <div class="article-meta">
+            {% if link.link_type %}<span>{{ link.link_type }}</span>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if mentions %}
+<div style="margin-bottom: 2rem;">
+    <h2>Recent Mentions</h2>
+    {% for mention in mentions[:10] %}
+    <div class="article-item">
+        {% if mention.context_snippet %}
+        <p style="color: var(--text-secondary); font-style: italic;">"{{ mention.context_snippet }}"</p>
+        {% endif %}
+        <div class="article-meta">
+            <span>{{ mention.mentioned_at.strftime('%b %d, %Y') if mention.mentioned_at else '' }}</span>
+            {% if mention.sentiment %}<span>{{ mention.sentiment }}</span>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+    <p class="card-meta">
+        <span>First seen: {{ tool.first_seen.strftime('%b %d, %Y') if tool.first_seen else 'Unknown' }}</span>
+        {% if tool.github_license %}<span>License: {{ tool.github_license }}</span>{% endif %}
+        {% if tool.source %}<span>Source: {{ tool.source }}</span>{% endif %}
+    </p>
+</div>
+{% endblock %}

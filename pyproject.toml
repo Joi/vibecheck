@@ -20,6 +20,7 @@ dependencies = [
     "python-multipart>=0.0.9",
     "mcp>=1.0.0",
     "psycopg2-binary>=2.9.11",
+    "jinja2>=3.1.0",
 ]
 
 [project.optional-dependencies]
@@ -54,3 +55,6 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+# Web UI
+# jinja2 is already a dependency of fastapi

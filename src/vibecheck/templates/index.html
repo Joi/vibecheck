@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Tools{% endblock %}
+
+{% block content %}
+<h1>AI Coding Tools</h1>
+<p class="subtitle">Community-curated directory of AI tools for practitioners. Tracked across {{ communities|length }} communities.</p>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">{{ total_tools }}</div>
+        <div class="stat-label">Tools</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">{{ total_articles }}</div>
+        <div class="stat-label">Articles</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">{{ communities|length }}</div>
+        <div class="stat-label">Communities</div>
+    </div>
+</div>
+
+<div class="search-box">
+    <input type="text" id="search" placeholder="Search tools..." onkeyup="filterTools()">
+</div>
+
+<h2>Recent Tools</h2>
+
+{% if tools %}
+<div class="cards" id="tools-grid">
+    {% for tool in tools %}
+    <div class="card" data-name="{{ tool.name|lower }}" data-slug="{{ tool.slug|lower }}" data-desc="{{ (tool.description or '')|lower }}">
+        <div class="card-header">
+            <h3 class="card-title">
+                <a href="/tools/{{ tool.slug }}">{{ tool.name }}</a>
+            </h3>
+        </div>
+        <div class="card-meta">
+            {% if tool.github_stars %}
+            <span>⭐ {{ "{:,}".format(tool.github_stars) }}</span>
+            {% endif %}
+            {% if tool.first_seen %}
+            <span>Added {{ tool.first_seen.strftime('%b %d') }}</span>
+            {% endif %}
+        </div>
+        {% if tool.description %}
+        <p class="card-description">{{ tool.description }}</p>
+        {% endif %}
+        <div class="card-tags">
+            {% for cat in tool.categories[:3] %}
+            <span class="tag">{{ cat }}</span>
+            {% endfor %}
+            {% for comm in tool.communities[:2] %}
+            <span class="tag community">{{ comm }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No tools yet</h3>
+    <p>Tools will appear here as they're discovered in community discussions.</p>
+</div>
+{% endif %}
+
+{% if has_more %}
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="/tools?page={{ page + 1 }}" class="btn btn-secondary">Load More</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterTools() {
+    const query = document.getElementById('search').value.toLowerCase();
+    const cards = document.querySelectorAll('.card');
+    
+    cards.forEach(card => {
+        const name = card.dataset.name;
+        const slug = card.dataset.slug;
+        const desc = card.dataset.desc;
+        
+        if (name.includes(query) || slug.includes(query) || desc.includes(query)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
