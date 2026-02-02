@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from .database import ArticlesDB, CommunitiesDB, ToolsDB
+from .database import ArticlesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
 
 router = APIRouter()
 
@@ -74,6 +74,14 @@ def get_communities_db() -> CommunitiesDB:
 
 def get_articles_db() -> ArticlesDB:
     return ArticlesDB()
+
+
+def get_evaluations_db() -> EvaluationsDB:
+    return EvaluationsDB()
+
+
+def get_links_db() -> LinksDB:
+    return LinksDB()
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -161,6 +169,8 @@ async def tool_detail(
     slug: str,
     tools_db: ToolsDB = Depends(get_tools_db),
     communities_db: CommunitiesDB = Depends(get_communities_db),
+    evaluations_db: EvaluationsDB = Depends(get_evaluations_db),
+    links_db: LinksDB = Depends(get_links_db),
 ):
     """Tool detail page."""
     try:
@@ -169,8 +179,8 @@ async def tool_detail(
             raise HTTPException(status_code=404, detail="Tool not found")
         
         # Get related data (with error handling)
-        evaluations = tools_db.get_evaluations_for_tool(tool["id"])
-        links = tools_db.get_links_for_tool(tool["id"])
+        evaluations = evaluations_db.get_evaluations_for_tool(tool["id"])
+        links = links_db.get_links_for_tool(tool["id"])
         
         try:
             communities = communities_db.get_communities_for_tool(tool["id"])
@@ -178,7 +188,7 @@ async def tool_detail(
             communities = []
         
         try:
-            mentions = tools_db.get_tool_mentions(tool["id"])
+            mentions = links_db.get_tool_mentions(tool["id"])
         except Exception:
             mentions = []
         
