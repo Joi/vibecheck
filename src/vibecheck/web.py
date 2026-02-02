@@ -1,5 +1,6 @@
 """Web UI routes for vibecheck."""
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -11,8 +12,16 @@ from .database import ArticlesDB, CommunitiesDB, ToolsDB
 
 router = APIRouter()
 
-# Templates directory
+# Templates directory - handle both local dev and Vercel deployment
+# In Vercel, the working directory is the project root
 templates_dir = Path(__file__).parent / "templates"
+if not templates_dir.exists():
+    # Fallback for Vercel: try relative to project root
+    templates_dir = Path("src/vibecheck/templates")
+if not templates_dir.exists():
+    # Another fallback
+    templates_dir = Path(os.getcwd()) / "src" / "vibecheck" / "templates"
+
 templates = Jinja2Templates(directory=str(templates_dir))
 
 
