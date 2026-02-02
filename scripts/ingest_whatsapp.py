@@ -3,6 +3,8 @@
 
 import json
 import re
+import tempfile
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -50,11 +52,24 @@ def parse_whatsapp_export(filepath: Path) -> list[dict]:
     """Parse WhatsApp chat export into structured messages."""
     messages = []
     
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
+    # Handle zip files
+    if filepath.suffix == '.zip':
+        with zipfile.ZipFile(filepath, 'r') as zf:
+            # Find the chat file (usually _chat.txt)
+            chat_files = [f for f in zf.namelist() if f.endswith('.txt') and 'chat' in f.lower()]
+            if not chat_files:
+                chat_files = [f for f in zf.namelist() if f.endswith('.txt')]
+            if not chat_files:
+                raise ValueError(f"No chat .txt file found in {filepath}")
+            
+            with zf.open(chat_files[0]) as f:
+                content = f.read().decode('utf-8', errors='replace')
+    else:
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
     
-    # Split by message boundaries (new lines starting with [date)
-    raw_messages = re.split(r'(?=\[\d{4}/\d{2}/\d{2})', content)
+    # Split by message boundaries (lines starting with [YYYY/MM/DD, HH:MM:SS])
+    raw_messages = re.split(r'(?=\[\d{4}/\d{2}/\d{2},\s*\d{1,2}:\d{2}:\d{2}\])', content)
     
     for raw in raw_messages:
         raw = raw.strip()

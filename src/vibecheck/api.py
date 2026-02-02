@@ -178,6 +178,8 @@ async def create_tool(
     # TODO: Add authentication
     try:
         result = db.create_tool(tool.model_dump(exclude_none=True))
+        # Add empty communities list (not stored in tools table, fetched from tool_communities)
+        result["communities"] = []
         return ToolResponse(**result)
     except Exception as e:
         if "duplicate key" in str(e).lower():
