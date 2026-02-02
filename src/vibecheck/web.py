@@ -30,6 +30,28 @@ def find_templates_dir() -> Path:
 templates_dir = find_templates_dir()
 templates = None  # Lazy load to avoid startup errors
 
+def format_date(value, fmt="%b %d"):
+    """Format a date string or datetime object."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        # Parse ISO format string
+        try:
+            from datetime import datetime
+            # Handle ISO format with or without microseconds
+            if "." in value:
+                dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            else:
+                dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return dt.strftime(fmt)
+        except (ValueError, AttributeError):
+            return value[:10] if len(value) >= 10 else value
+    # Assume it's a datetime object
+    try:
+        return value.strftime(fmt)
+    except AttributeError:
+        return str(value)
+
 def get_templates():
     """Lazy load templates to provide better error messages."""
     global templates
@@ -37,6 +59,8 @@ def get_templates():
         if not templates_dir.exists():
             raise RuntimeError(f"Templates directory not found. Tried: {templates_dir}")
         templates = Jinja2Templates(directory=str(templates_dir))
+        # Add custom filters
+        templates.env.filters["format_date"] = format_date
     return templates
 
 

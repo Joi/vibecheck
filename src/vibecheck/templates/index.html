@@ -41,7 +41,7 @@
             <span>⭐ {{ "{:,}".format(tool.github_stars) }}</span>
             {% endif %}
             {% if tool.first_seen %}
-            <span>Added {{ tool.first_seen.strftime('%b %d') }}</span>
+            <span>Added {{ tool.first_seen|format_date }}</span>
             {% endif %}
         </div>
         {% if tool.description %}

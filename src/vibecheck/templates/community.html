@@ -37,7 +37,7 @@
             <span>{{ item.mention_count }} mentions</span>
             {% endif %}
             {% if item.first_mentioned %}
-            <span>First mentioned {{ item.first_mentioned.strftime('%b %d') }}</span>
+            <span>First mentioned {{ item.first_mentioned|format_date }}</span>
             {% endif %}
         </div>
         {% if item.tool.description %}

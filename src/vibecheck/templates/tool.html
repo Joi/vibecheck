@@ -74,7 +74,7 @@
                 {% if eval.works %}✅ Works{% else %}❌ Issues{% endif %}
                 {% if eval.actively_maintained %} • 🔄 Actively Maintained{% endif %}
             </span>
-            <span class="card-meta">{{ eval.created_at.strftime('%b %d, %Y') if eval.created_at else '' }}</span>
+            <span class="card-meta">{{ eval.created_at|format_date('%b %d, %Y') if eval.created_at else '' }}</span>
         </div>
         {% if eval.verdict %}
         <p><strong>Verdict:</strong> {{ eval.verdict }}</p>
@@ -118,7 +118,7 @@
         <p style="color: var(--text-secondary); font-style: italic;">"{{ mention.context_snippet }}"</p>
         {% endif %}
         <div class="article-meta">
-            <span>{{ mention.mentioned_at.strftime('%b %d, %Y') if mention.mentioned_at else '' }}</span>
+            <span>{{ mention.mentioned_at|format_date('%b %d, %Y') if mention.mentioned_at else '' }}</span>
             {% if mention.sentiment %}<span>{{ mention.sentiment }}</span>{% endif %}
         </div>
     </div>
@@ -128,7 +128,7 @@
 
 <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
     <p class="card-meta">
-        <span>First seen: {{ tool.first_seen.strftime('%b %d, %Y') if tool.first_seen else 'Unknown' }}</span>
+        <span>First seen: {{ tool.first_seen|format_date('%b %d, %Y') if tool.first_seen else 'Unknown' }}</span>
         {% if tool.github_license %}<span>License: {{ tool.github_license }}</span>{% endif %}
         {% if tool.source %}<span>Source: {{ tool.source }}</span>{% endif %}
     </p>

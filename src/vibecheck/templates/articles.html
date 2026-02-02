@@ -22,7 +22,7 @@
         {% endif %}
         <div class="article-meta">
             {% if article.author %}<span>By {{ article.author }}</span>{% endif %}
-            {% if article.published_at %}<span>{{ article.published_at.strftime('%b %d, %Y') }}</span>{% endif %}
+            {% if article.published_at %}<span>{{ article.published_at|format_date('%b %d, %Y') }}</span>{% endif %}
             {% if article.source %}<span>{{ article.source }}</span>{% endif %}
             {% if article.community_slug %}<span class="tag community" style="margin-left: 0.5rem;">{{ article.community_slug }}</span>{% endif %}
         </div>
