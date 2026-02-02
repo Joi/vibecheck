@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .database import ArticlesDB, CommunitiesDB, ToolsDB
@@ -13,16 +13,31 @@ from .database import ArticlesDB, CommunitiesDB, ToolsDB
 router = APIRouter()
 
 # Templates directory - handle both local dev and Vercel deployment
-# In Vercel, the working directory is the project root
-templates_dir = Path(__file__).parent / "templates"
-if not templates_dir.exists():
-    # Fallback for Vercel: try relative to project root
-    templates_dir = Path("src/vibecheck/templates")
-if not templates_dir.exists():
-    # Another fallback
-    templates_dir = Path(os.getcwd()) / "src" / "vibecheck" / "templates"
+def find_templates_dir() -> Path:
+    """Find templates directory in various possible locations."""
+    candidates = [
+        Path(__file__).parent / "templates",  # Local dev
+        Path("src/vibecheck/templates"),  # Vercel relative
+        Path(os.getcwd()) / "src" / "vibecheck" / "templates",  # Vercel cwd
+        Path("/var/task/src/vibecheck/templates"),  # AWS Lambda style
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    # Return first candidate even if not found (will error later with clear message)
+    return candidates[0]
 
-templates = Jinja2Templates(directory=str(templates_dir))
+templates_dir = find_templates_dir()
+templates = None  # Lazy load to avoid startup errors
+
+def get_templates():
+    """Lazy load templates to provide better error messages."""
+    global templates
+    if templates is None:
+        if not templates_dir.exists():
+            raise RuntimeError(f"Templates directory not found. Tried: {templates_dir}")
+        templates = Jinja2Templates(directory=str(templates_dir))
+    return templates
 
 
 def get_tools_db() -> ToolsDB:
@@ -61,7 +76,7 @@ async def home(
     articles_result = articles_db.list_articles(page=1, per_page=1)
     total_articles = articles_result.get("total", 0)
     
-    return templates.TemplateResponse("index.html", {
+    return get_templates().TemplateResponse("index.html", {
         "request": request,
         "active_page": "tools",
         "tools": tools,
@@ -94,7 +109,7 @@ async def tools_list(
     communities = communities_db.list_communities()
     articles_result = articles_db.list_articles(page=1, per_page=1)
     
-    return templates.TemplateResponse("index.html", {
+    return get_templates().TemplateResponse("index.html", {
         "request": request,
         "active_page": "tools",
         "tools": tools,
@@ -133,7 +148,7 @@ async def tool_detail(
                 "name": c["communities"]["name"],
             })
     
-    return templates.TemplateResponse("tool.html", {
+    return get_templates().TemplateResponse("tool.html", {
         "request": request,
         "active_page": "tools",
         "tool": tool,
@@ -154,7 +169,7 @@ async def articles_list(
     per_page = 20
     result = articles_db.list_articles(page=page, per_page=per_page)
     
-    return templates.TemplateResponse("articles.html", {
+    return get_templates().TemplateResponse("articles.html", {
         "request": request,
         "active_page": "articles",
         "articles": result.get("articles", []),
@@ -171,7 +186,7 @@ async def communities_list(
     """Communities listing page."""
     communities = communities_db.list_communities()
     
-    return templates.TemplateResponse("communities.html", {
+    return get_templates().TemplateResponse("communities.html", {
         "request": request,
         "active_page": "communities",
         "communities": communities,
@@ -192,7 +207,7 @@ async def community_detail(
     # Get tools for this community
     tools = communities_db.get_tools_for_community(community["slug"])
     
-    return templates.TemplateResponse("community.html", {
+    return get_templates().TemplateResponse("community.html", {
         "request": request,
         "active_page": "communities",
         "community": community,
