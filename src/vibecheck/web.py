@@ -261,18 +261,35 @@ async def community_detail(
     communities_db: CommunitiesDB = Depends(get_communities_db),
 ):
     """Community detail page."""
-    community = communities_db.get_community(slug)
-    if not community:
-        raise HTTPException(status_code=404, detail="Community not found")
-    
-    # Get tools for this community
-    tools = communities_db.get_tools_for_community(community["slug"])
-    
-    return get_templates().TemplateResponse("community.html", {
-        "request": request,
-        "active_page": "communities",
-        "community": community,
-        "tools": tools,
-    })
+    try:
+        community = communities_db.get_community(slug)
+        if not community:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        # Get tools for this community
+        tool_communities = communities_db.get_tools_for_community(community["slug"])
+        
+        # Extract tool info from the join result
+        tools = []
+        for tc in tool_communities:
+            if tc.get("tools"):
+                tool = tc["tools"]
+                tool["first_mentioned"] = tc.get("first_mentioned")
+                tools.append(tool)
+        
+        return get_templates().TemplateResponse("community.html", {
+            "request": request,
+            "active_page": "communities",
+            "community": community,
+            "tools": tools,
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        return JSONResponse({
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
 
 
