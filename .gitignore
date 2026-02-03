@@ -25,3 +25,4 @@ data/imports/*.txt
 # Supabase
 supabase/.temp/
 .vercel
+.env*.local

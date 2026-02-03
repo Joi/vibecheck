@@ -388,3 +388,14 @@ async def admin_article_delete(
         client.table("articles").delete().eq("id", article["id"]).execute()
     
     return RedirectResponse("/admin/articles", status_code=302)
+
+
+@router.get("/debug-env")
+async def debug_env():
+    """Debug endpoint to check env vars (remove in production)."""
+    pw = os.environ.get("ADMIN_PASSWORD", "NOT_SET")
+    return {
+        "password_set": pw != "NOT_SET" and pw != "",
+        "password_length": len(pw) if pw else 0,
+        "first_char": pw[0] if pw else None,
+    }
