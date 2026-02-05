@@ -326,7 +326,7 @@ def extract_articles_from_message(msg: dict) -> list[dict]:
 
 
 def generate_title_from_url(url: str) -> str:
-    """Generate a readable title from URL."""
+    """Generate a readable title from URL (fallback when fetch fails)."""
     parsed = urlparse(url)
     path = parsed.path.strip('/')
     
@@ -352,15 +352,74 @@ def generate_title_from_url(url: str) -> str:
     return title.title() if title else parsed.netloc
 
 
+def fetch_url_metadata(url: str, client: httpx.Client) -> dict:
+    """Fetch URL and extract title and description from HTML metadata.
+    
+    Returns dict with 'title' and 'description' keys (may be None if not found).
+    """
+    result = {'title': None, 'description': None}
+    
+    try:
+        resp = client.get(url, follow_redirects=True, timeout=15)
+        if resp.status_code != 200:
+            return result
+        
+        html = resp.text[:50000]  # Only parse first 50KB
+        
+        # Extract <title> tag
+        title_match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
+        if title_match:
+            result['title'] = title_match.group(1).strip()[:500]
+        
+        # Extract meta description (prefer og:description, then twitter:description, then description)
+        for pattern in [
+            r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:description["\']',
+            r'<meta[^>]+name=["\']twitter:description["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:description["\']',
+            r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']description["\']',
+        ]:
+            desc_match = re.search(pattern, html, re.IGNORECASE)
+            if desc_match:
+                result['description'] = desc_match.group(1).strip()[:2000]
+                break
+        
+        # Also try og:title if title tag is empty
+        if not result['title']:
+            for pattern in [
+                r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']',
+                r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\']',
+            ]:
+                og_title_match = re.search(pattern, html, re.IGNORECASE)
+                if og_title_match:
+                    result['title'] = og_title_match.group(1).strip()[:500]
+                    break
+    
+    except Exception:
+        pass  # Silently fail, will use fallback
+    
+    return result
+
+
 def push_articles_to_vibecheck(
     articles: list[dict],
     existing_urls: set[str],
     community: str = 'agi',
     dry_run: bool = False,
+    fetch_metadata: bool = True,
 ) -> tuple[int, int]:
-    """Push extracted articles to vibecheck API. Returns (created, skipped)."""
+    """Push extracted articles to vibecheck API. Returns (created, skipped).
+    
+    Args:
+        articles: List of article dicts with 'url', 'context', etc.
+        existing_urls: Set of URLs already in database (for deduplication)
+        community: Community slug to associate articles with
+        dry_run: If True, only print what would be done
+        fetch_metadata: If True, fetch each URL to get real title/description
+    """
     # Deduplicate by URL
-    seen = {}
+    seen: dict[str, dict] = {}
     for article in articles:
         url = article['url']
         if url not in seen and url not in existing_urls:
@@ -383,14 +442,30 @@ def push_articles_to_vibecheck(
     created = 0
     with httpx.Client(timeout=30) as client:
         for article in articles:
-            # Generate title from URL (API requires title)
-            title = generate_title_from_url(article['url'])
+            url = article['url']
+            
+            # Try to fetch real title and description from the URL
+            title: str | None = None
+            description: str | None = None
+            
+            if fetch_metadata:
+                print(f"  Fetching {url[:50]}...", end=" ", flush=True)
+                metadata = fetch_url_metadata(url, client)
+                title = metadata.get('title')
+                description = metadata.get('description')
+            
+            # Fallback to generated title if fetch failed
+            if not title:
+                title = generate_title_from_url(url)
+            
+            # Use description from page, or fall back to WhatsApp context
+            summary = description or sanitize_context(article.get('context', ''), 300)
             
             payload = {
-                'url': article['url'],
+                'url': url,
                 'title': title,
                 'community_slug': community,
-                'summary': sanitize_context(article.get('context', ''), 300),
+                'summary': summary,
                 'source': 'whatsapp-import',
             }
             
@@ -398,14 +473,24 @@ def push_articles_to_vibecheck(
                 resp = client.post(f"{VIBECHECK_API}/articles", json=payload)
                 if resp.status_code == 200:
                     created += 1
-                    print(f"  ✓ {article['url'][:60]}...")
+                    if fetch_metadata:
+                        print(f"✓ {title[:50]}...")
+                    else:
+                        print(f"  ✓ {url[:60]}...")
                 elif resp.status_code == 409 or resp.status_code == 422:
-                    # Already exists or validation error - skip silently
-                    pass
+                    # Already exists or validation error
+                    if fetch_metadata:
+                        print("(already exists)")
                 else:
-                    print(f"  ✗ {article['url'][:40]}: {resp.status_code}")
+                    if fetch_metadata:
+                        print(f"✗ {resp.status_code}")
+                    else:
+                        print(f"  ✗ {url[:40]}: {resp.status_code}")
             except Exception as e:
-                print(f"  ✗ {article['url'][:40]}: {e}")
+                if fetch_metadata:
+                    print(f"✗ {e}")
+                else:
+                    print(f"  ✗ {url[:40]}: {e}")
     
     return created, len(articles) - created
 
@@ -436,6 +521,8 @@ Examples:
                         help='Auto-detect last import date from database')
     parser.add_argument('--articles-only', action='store_true', help='Only import articles, skip tools')
     parser.add_argument('--tools-only', action='store_true', help='Only import tools, skip articles')
+    parser.add_argument('--no-fetch', action='store_true', 
+                        help='Skip fetching URLs for metadata (use URL-derived titles)')
     args = parser.parse_args()
     
     filepath = Path(args.chatfile)
@@ -507,6 +594,7 @@ Examples:
             existing_urls,
             community=args.community,
             dry_run=args.dry_run,
+            fetch_metadata=not args.no_fetch,
         )
     
     print("\nDone!")
