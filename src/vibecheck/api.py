@@ -740,13 +740,15 @@ async def get_article(
 @app.post(f"{settings.api_prefix}/articles", response_model=ArticleResponse)
 async def create_article(
     article: ArticleCreate,
-    articles_db: ArticlesDB = Depends(get_articles_db),
 ):
     """Add a new article about vibe coding / AI tools."""
+    # Use admin client to bypass RLS (needed for upsert/update operations)
+    admin_db = ArticlesDB(client=get_admin_client())
+    
     data = article.model_dump(exclude_none=True)
     data["url"] = str(data["url"])  # Convert HttpUrl to string
     
-    result = articles_db.create_article(data)
+    result = admin_db.create_article(data)
     return ArticleResponse(**result)
 
 
