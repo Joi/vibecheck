@@ -746,10 +746,6 @@ async def create_article(
     data = article.model_dump(exclude_none=True)
     data["url"] = str(data["url"])  # Convert HttpUrl to string
     
-    if article.community:
-        data["community_slug"] = article.community
-        del data["community"]
-    
     result = articles_db.create_article(data)
     return ArticleResponse(**result)
 
