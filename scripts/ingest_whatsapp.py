@@ -5,6 +5,7 @@ Supports incremental imports with deduplication:
 - Use --since DATE to only process messages after a certain date
 - Use --auto-since to automatically detect the last import date from the database
 - Existing URLs are automatically skipped (deduplication)
+- Use --enhance to generate AI-powered titles and descriptions for articles
 
 Example:
     # Auto-detect where we left off (recommended for vibez-agi)
@@ -15,6 +16,9 @@ Example:
     
     # Dry run to see what would be imported
     python ingest_whatsapp.py chat.zip --auto-since --dry-run
+    
+    # Import with AI-enhanced descriptions
+    python ingest_whatsapp.py chat.zip --auto-since --enhance
 """
 
 import re
@@ -523,6 +527,8 @@ Examples:
     parser.add_argument('--tools-only', action='store_true', help='Only import tools, skip articles')
     parser.add_argument('--no-fetch', action='store_true', 
                         help='Skip fetching URLs for metadata (use URL-derived titles)')
+    parser.add_argument('--enhance', action='store_true',
+                        help='Use AI to enhance article titles/descriptions after import')
     args = parser.parse_args()
     
     filepath = Path(args.chatfile)
@@ -589,13 +595,30 @@ Examples:
             articles = extract_articles_from_message(msg)
             all_articles.extend(articles)
         print(f"Found {len(all_articles)} article URLs")
-        push_articles_to_vibecheck(
+        created, _ = push_articles_to_vibecheck(
             all_articles,
             existing_urls,
             community=args.community,
             dry_run=args.dry_run,
             fetch_metadata=not args.no_fetch,
         )
+        
+        # Optionally enhance with AI
+        if args.enhance and created > 0 and not args.dry_run:
+            print(f"\n=== Enhancing {created} new articles with AI ===")
+            try:
+                import subprocess
+                script_dir = Path(__file__).parent
+                result = subprocess.run(
+                    ['uv', 'run', 'python', str(script_dir / 'enhance_articles.py'), 
+                     '--limit', str(created)],
+                    cwd=script_dir.parent,
+                    capture_output=False,
+                )
+                if result.returncode != 0:
+                    print("Warning: AI enhancement had issues (see above)")
+            except Exception as e:
+                print(f"Warning: Could not run AI enhancement: {e}")
     
     print("\nDone!")
     return 0
