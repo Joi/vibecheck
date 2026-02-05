@@ -151,6 +151,31 @@ vibecheck/
 └── tests/               # Test suite
 ```
 
+## Roadmap
+
+### Data Sources
+- [ ] **Awesome list harvesting** — Import from curated GitHub awesome-* lists
+- [ ] **Tool aggregator sync** — Pull from Product Hunt, AlternativeTo, etc.
+- [ ] **RSS/Atom feeds** — Subscribe to AI tool blogs and newsletters
+- [ ] **Discord ingestion** — Import from Discord server exports
+
+### Interoperability
+- [ ] **ai-wiki integration** — Bidirectional sync with [ai-wiki](https://github.com/nicholasgriffintn/ai-wiki) for shared tool metadata
+- [ ] **Common schema** — Publish tool/evaluation schema for cross-platform compatibility
+- [ ] **Import/export** — Bulk import/export in standard formats (JSON, CSV)
+
+### Federation
+- [ ] **Federation protocol** — Allow vibecheck instances to share and aggregate data
+- [ ] **Peer discovery** — Find and connect to other vibecheck instances
+- [ ] **Cross-instance reviews** — Aggregate evaluations across federated instances
+- [ ] **Self-hosted instances** — Easy deployment for private communities
+
+### Platform
+- [ ] **GitHub OAuth** — Login with GitHub for authenticated evaluations
+- [ ] **GitHub stats auto-refresh** — Keep star counts and last commit dates current
+- [ ] **Full-text search** — Improved search with filters and facets
+- [ ] **MCP server** — Expose vibecheck as an MCP tool for AI agents
+
 ## Deployment
 
 Deployed on Vercel with Supabase backend:
