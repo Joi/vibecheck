@@ -5,10 +5,10 @@
 {% block extra_styles %}
 <style>
     .discover-container {
-        max-width: 500px;
+        max-width: 420px;
         margin: 0 auto;
-        padding: 1rem;
-        min-height: 80vh;
+        padding: 0.75rem;
+        min-height: 90vh;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -16,290 +16,300 @@
     
     .discover-container h1 {
         margin-bottom: 0.25rem;
+        font-size: 1.5rem;
     }
     
     .subtitle {
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
         color: var(--text-secondary);
+        font-size: 0.9rem;
     }
     
     .card-stack {
         position: relative;
         width: 100%;
-        max-width: 350px;
-        height: 480px;
+        height: 420px;
         margin: 0.5rem 0;
     }
     
+    /* === THE CARD === */
     .swipe-card {
         position: absolute;
         width: 100%;
         height: 100%;
-        background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
-        border: 2px solid #2a2a4a;
-        border-radius: 20px;
-        padding: 1.5rem;
-        cursor: grab;
-        user-select: none;
-        touch-action: none;
-        transition: transform 0.15s ease-out, opacity 0.15s ease-out, box-shadow 0.15s;
+        background: linear-gradient(165deg, #1e1e2e 0%, #181825 100%);
+        border: 1px solid #313244;
+        border-radius: 16px;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         overflow: hidden;
-    }
-    
-    .swipe-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #f44336, #ff9800, #4CAF50);
-        opacity: 0.7;
+        transition: transform 0.25s ease-out, opacity 0.25s ease-out;
     }
     
     .swipe-card.dragging {
-        cursor: grabbing;
         transition: none;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
     
     .swipe-card.swiped-left {
-        transform: translateX(-150%) rotate(-30deg);
+        transform: translateX(-120%) rotate(-20deg) !important;
         opacity: 0;
     }
     
     .swipe-card.swiped-right {
-        transform: translateX(150%) rotate(30deg);
+        transform: translateX(120%) rotate(20deg) !important;
         opacity: 0;
     }
     
     .swipe-card.swiped-up {
-        transform: translateY(-150%);
+        transform: translateY(-120%) !important;
         opacity: 0;
     }
     
-    /* Edge glow indicators - show on sides of card */
-    .swipe-card.drag-left {
-        border-color: #f44336;
-        box-shadow: -20px 0 60px rgba(244, 67, 54, 0.5), 0 10px 40px rgba(0,0,0,0.4);
-    }
+    /* Drag state visual feedback */
+    .swipe-card.drag-left { border-color: #f38ba8; }
+    .swipe-card.drag-right { border-color: #a6e3a1; }
+    .swipe-card.drag-up { border-color: #89b4fa; }
     
-    .swipe-card.drag-right {
-        border-color: #4CAF50;
-        box-shadow: 20px 0 60px rgba(76, 175, 80, 0.5), 0 10px 40px rgba(0,0,0,0.4);
-    }
-    
-    .swipe-card.drag-up {
-        border-color: #2196F3;
-        box-shadow: 0 -20px 60px rgba(33, 150, 243, 0.5), 0 10px 40px rgba(0,0,0,0.4);
-    }
-    
-    /* Fullscreen overlay indicators */
-    .swipe-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 4rem;
-        font-weight: bold;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.1s;
-        z-index: 1000;
-    }
-    
-    .overlay-nope {
-        background: rgba(244, 67, 54, 0.3);
-        color: #f44336;
-    }
-    
-    .overlay-like {
-        background: rgba(76, 175, 80, 0.3);
-        color: #4CAF50;
-    }
-    
-    .overlay-save {
-        background: rgba(33, 150, 243, 0.3);
-        color: #2196F3;
+    /* === SCROLLABLE CONTENT ZONE (top 70%) === */
+    .card-content {
+        flex: 1;
+        padding: 1.25rem;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y; /* Allow vertical scroll here */
     }
     
     .card-type-badge {
         display: inline-block;
-        padding: 0.3rem 0.75rem;
-        background: var(--accent);
-        color: white;
-        border-radius: 20px;
-        font-size: 0.7rem;
+        padding: 0.25rem 0.6rem;
+        background: #cba6f7;
+        color: #1e1e2e;
+        border-radius: 12px;
+        font-size: 0.65rem;
         text-transform: uppercase;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 0.5px;
         margin-bottom: 0.75rem;
-        align-self: flex-start;
     }
     
     .card-type-badge.article {
-        background: #9c27b0;
+        background: #f5c2e7;
     }
     
     .card-title {
-        font-size: 1.3rem;
-        margin: 0 0 0.75rem 0;
-        line-height: 1.3;
+        font-size: 1.2rem;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.35;
         font-weight: 600;
+        color: #cdd6f4;
     }
     
     .card-title a {
-        color: #fff;
+        color: inherit;
         text-decoration: none;
     }
     
     .card-description {
-        color: #a0a0b0;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        flex-grow: 1;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 5;
-        -webkit-box-orient: vertical;
-    }
-    
-    .card-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        color: #888;
-        font-size: 0.8rem;
-        margin-top: auto;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255,255,255,0.1);
+        color: #a6adc8;
+        font-size: 0.88rem;
+        line-height: 1.55;
     }
     
     .card-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4rem;
+        gap: 0.35rem;
         margin-top: 0.75rem;
     }
     
     .card-tags .tag {
-        background: rgba(168, 85, 247, 0.2);
-        border: 1px solid rgba(168, 85, 247, 0.3);
-        padding: 0.2rem 0.5rem;
-        border-radius: 12px;
+        background: rgba(203, 166, 247, 0.15);
+        border: 1px solid rgba(203, 166, 247, 0.25);
+        color: #cba6f7;
+        padding: 0.15rem 0.45rem;
+        border-radius: 10px;
         font-size: 0.7rem;
     }
     
-    /* Swipe hint arrows on card */
-    .swipe-hints {
-        position: absolute;
-        bottom: 1rem;
-        left: 0;
-        right: 0;
+    .card-meta {
         display: flex;
-        justify-content: space-between;
-        padding: 0 1rem;
-        pointer-events: none;
-    }
-    
-    .hint {
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        color: #6c7086;
         font-size: 0.75rem;
-        color: #666;
-        opacity: 0.8;
-    }
-    
-    .hint-left { color: #f44336; }
-    .hint-right { color: #4CAF50; }
-    .hint-up {
-        position: absolute;
-        top: -2rem;
-        left: 50%;
-        transform: translateX(-50%);
-        color: #2196F3;
-        flex-direction: column;
-    }
-    
-    .action-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 1.25rem;
         margin-top: 0.75rem;
     }
     
+    /* === SWIPE HANDLE ZONE (bottom 30%) === */
+    .swipe-handle {
+        height: 110px;
+        min-height: 110px;
+        touch-action: none; /* Capture ALL touch here for swiping */
+        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.15));
+        border-top: 1px solid #313244;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1.5rem;
+        position: relative;
+        cursor: grab;
+    }
+    
+    .swipe-handle:active {
+        cursor: grabbing;
+    }
+    
+    /* Grip indicator */
+    .swipe-handle::after {
+        content: '';
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: #45475a;
+        border-radius: 2px;
+    }
+    
+    /* Direction indicators in handle */
+    .direction-hint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        opacity: 0.5;
+        transition: opacity 0.15s, transform 0.15s;
+    }
+    
+    .direction-hint.active {
+        opacity: 1;
+        transform: scale(1.15);
+    }
+    
+    .direction-hint .icon {
+        font-size: 1.8rem;
+        line-height: 1;
+    }
+    
+    .direction-hint .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    .direction-hint.pass { color: #f38ba8; }
+    .direction-hint.save { color: #89b4fa; }
+    .direction-hint.like { color: #a6e3a1; }
+    
+    /* Instruction text at top of handle */
+    .handle-instruction {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.7rem;
+        color: #6c7086;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    /* === OVERLAYS === */
+    .swipe-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        border-radius: 16px;
+    }
+    
+    .swipe-overlay.pass {
+        background: linear-gradient(to left, transparent 30%, rgba(243, 139, 168, 0.25));
+        color: #f38ba8;
+    }
+    
+    .swipe-overlay.like {
+        background: linear-gradient(to right, transparent 30%, rgba(166, 227, 161, 0.25));
+        color: #a6e3a1;
+    }
+    
+    .swipe-overlay.save {
+        background: linear-gradient(to top, transparent 30%, rgba(137, 180, 250, 0.25));
+        color: #89b4fa;
+    }
+    
+    /* === BUTTON CONTROLS === */
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    
     .action-btn {
-        width: 56px;
-        height: 56px;
+        width: 52px;
+        height: 52px;
         border-radius: 50%;
         border: 2px solid;
-        background: var(--bg-secondary);
+        background: #1e1e2e;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.4rem;
-        transition: all 0.2s;
+        font-size: 1.3rem;
+        transition: all 0.15s;
     }
     
     .action-btn:active {
-        transform: scale(0.95);
+        transform: scale(0.92);
     }
     
-    .action-btn.nope {
-        border-color: #f44336;
-        color: #f44336;
-    }
+    .action-btn.nope { border-color: #f38ba8; color: #f38ba8; }
+    .action-btn.bookmark { border-color: #89b4fa; color: #89b4fa; }
+    .action-btn.like { border-color: #a6e3a1; color: #a6e3a1; }
     
-    .action-btn.bookmark {
-        border-color: #2196F3;
-        color: #2196F3;
-        width: 48px;
-        height: 48px;
-        font-size: 1.2rem;
-    }
-    
-    .action-btn.like {
-        border-color: #4CAF50;
-        color: #4CAF50;
-    }
-    
-    .instructions {
+    /* === HEADER CONTROLS === */
+    .controls-row {
         display: flex;
-        justify-content: center;
-        gap: 1.5rem;
-        margin-top: 0.75rem;
-        font-size: 0.8rem;
-    }
-    
-    .instructions .inst {
-        display: flex;
+        justify-content: space-between;
         align-items: center;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .mode-toggle {
+        display: flex;
         gap: 0.3rem;
     }
     
-    .instructions .inst.pass { color: #f44336; }
-    .instructions .inst.save { color: #2196F3; }
-    .instructions .inst.like { color: #4CAF50; }
+    .mode-btn {
+        padding: 0.35rem 0.65rem;
+        border: 1px solid #313244;
+        background: #1e1e2e;
+        color: #6c7086;
+        border-radius: 14px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: all 0.15s;
+    }
     
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
+    .mode-btn.active {
+        background: #cba6f7;
+        color: #1e1e2e;
+        border-color: #cba6f7;
     }
     
     .score-display {
         display: flex;
-        justify-content: center;
-        gap: 2rem;
-        margin-bottom: 0.5rem;
+        gap: 1rem;
     }
     
     .score-item {
@@ -307,121 +317,104 @@
     }
     
     .score-value {
-        font-size: 1.25rem;
-        font-weight: bold;
+        font-size: 1.1rem;
+        font-weight: 700;
     }
     
-    .score-value.liked { color: #4CAF50; }
-    .score-value.saved { color: #2196F3; }
-    .score-value.passed { color: #f44336; }
+    .score-value.liked { color: #a6e3a1; }
+    .score-value.saved { color: #89b4fa; }
+    .score-value.passed { color: #f38ba8; }
     
     .score-label {
-        font-size: 0.7rem;
-        color: var(--text-secondary);
+        font-size: 0.6rem;
+        color: #6c7086;
         text-transform: uppercase;
     }
     
-    .mode-toggle {
-        display: flex;
-        gap: 0.4rem;
-        margin-bottom: 0.75rem;
-    }
-    
-    .mode-btn {
-        padding: 0.4rem 0.8rem;
-        border: 1px solid var(--border);
-        background: var(--bg-secondary);
-        color: var(--text-secondary);
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: all 0.2s;
-    }
-    
-    .mode-btn.active {
-        background: var(--accent);
-        color: white;
-        border-color: var(--accent);
-    }
-    
-    /* Card counter */
     .card-counter {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        color: #6c7086;
+        margin-bottom: 0.25rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    
+    .empty-state h3 {
+        color: #cdd6f4;
+    }
+    
+    .empty-state p {
+        color: #6c7086;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Fullscreen overlays for swipe feedback -->
-<div class="swipe-overlay overlay-nope" id="overlay-nope">✕ PASS</div>
-<div class="swipe-overlay overlay-like" id="overlay-like">♥ LIKE</div>
-<div class="swipe-overlay overlay-save" id="overlay-save">★ SAVE</div>
-
 <div class="discover-container">
     <h1>Discover</h1>
-    <p class="subtitle">Swipe to rate</p>
+    <p class="subtitle">Drag the handle to rate</p>
     
-    <div class="mode-toggle">
-        <button class="mode-btn {% if mode == 'tools' %}active{% endif %}" onclick="setMode('tools')">Tools</button>
-        <button class="mode-btn {% if mode == 'articles' %}active{% endif %}" onclick="setMode('articles')">Articles</button>
-        <button class="mode-btn {% if mode == 'mixed' %}active{% endif %}" onclick="setMode('mixed')">Mixed</button>
-    </div>
-    
-    <div class="score-display">
-        <div class="score-item">
-            <div class="score-value liked" id="liked-count">0</div>
-            <div class="score-label">Liked</div>
+    <div class="controls-row">
+        <div class="mode-toggle">
+            <button class="mode-btn {% if mode == 'tools' %}active{% endif %}" onclick="setMode('tools')">Tools</button>
+            <button class="mode-btn {% if mode == 'articles' %}active{% endif %}" onclick="setMode('articles')">Articles</button>
+            <button class="mode-btn {% if mode == 'mixed' %}active{% endif %}" onclick="setMode('mixed')">Mixed</button>
         </div>
-        <div class="score-item">
-            <div class="score-value saved" id="bookmarked-count">0</div>
-            <div class="score-label">Saved</div>
-        </div>
-        <div class="score-item">
-            <div class="score-value passed" id="passed-count">0</div>
-            <div class="score-label">Passed</div>
+        
+        <div class="score-display">
+            <div class="score-item">
+                <div class="score-value liked" id="liked-count">0</div>
+                <div class="score-label">Like</div>
+            </div>
+            <div class="score-item">
+                <div class="score-value saved" id="bookmarked-count">0</div>
+                <div class="score-label">Save</div>
+            </div>
+            <div class="score-item">
+                <div class="score-value passed" id="passed-count">0</div>
+                <div class="score-label">Pass</div>
+            </div>
         </div>
     </div>
     
     <div class="card-counter" id="card-counter"></div>
     
     <div class="card-stack" id="card-stack">
-        <!-- Cards will be injected here -->
+        <!-- Cards injected by JS -->
     </div>
     
     <div class="action-buttons">
-        <button class="action-btn nope" onclick="swipeCard('left')" title="Pass">✕</button>
-        <button class="action-btn bookmark" onclick="swipeCard('up')" title="Save">★</button>
-        <button class="action-btn like" onclick="swipeCard('right')" title="Like">♥</button>
-    </div>
-    
-    <div class="instructions">
-        <span class="inst pass">← Pass</span>
-        <span class="inst save">↑ Save</span>
-        <span class="inst like">Like →</span>
+        <button class="action-btn nope" onclick="swipeCard('left')" aria-label="Pass">✕</button>
+        <button class="action-btn bookmark" onclick="swipeCard('up')" aria-label="Save">★</button>
+        <button class="action-btn like" onclick="swipeCard('right')" aria-label="Like">♥</button>
     </div>
 </div>
 
 <div class="empty-state" id="empty-state" style="display: none;">
-    <h3>All caught up!</h3>
-    <p>You've reviewed all items. Check back later for more.</p>
-    <a href="/" class="btn btn-primary">Back to Home</a>
+    <h3>All done!</h3>
+    <p>You've reviewed everything. Check back later for more.</p>
+    <a href="/">Back to Home</a>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-// Items data from server
 let items = {{ items | tojson | safe }};
 let currentIndex = 0;
 let liked = 0, bookmarked = 0, passed = 0;
 let bookmarks = JSON.parse(localStorage.getItem('vibecheck-bookmarks') || '[]');
 
-// Swipe detection
-let startX, startY, currentX = 0, currentY = 0;
+// Drag state
 let isDragging = false;
+let startX = 0, startY = 0, currentX = 0, currentY = 0;
 let currentCard = null;
+let dragDirection = null; // 'horizontal' | 'vertical' | null
+
+const THRESHOLD_X = 80;
+const THRESHOLD_Y = 60;
 
 function updateCounter() {
     const remaining = items.length - currentIndex;
@@ -443,24 +436,53 @@ function createCard(item, index) {
     const desc = item.description || item.summary || 'No description available';
     
     card.innerHTML = `
-        <span class="card-type-badge ${typeBadge}">${typeLabel}</span>
-        <h2 class="card-title">
-            <a href="${item.url || '/tools/' + item.slug}" target="_blank">${title}</a>
-        </h2>
-        <p class="card-description">${desc}</p>
-        <div class="card-tags">
-            ${(item.categories || item.tags || []).slice(0, 3).map(t => `<span class="tag">${t}</span>`).join('')}
+        <!-- Overlays for visual feedback -->
+        <div class="swipe-overlay pass">✕</div>
+        <div class="swipe-overlay like">♥</div>
+        <div class="swipe-overlay save">★</div>
+        
+        <!-- Scrollable content zone -->
+        <div class="card-content">
+            <span class="card-type-badge ${typeBadge}">${typeLabel}</span>
+            <h2 class="card-title">
+                <a href="${item.url || '/tools/' + item.slug}" target="_blank">${title}</a>
+            </h2>
+            <p class="card-description">${desc}</p>
+            <div class="card-tags">
+                ${(item.categories || item.tags || []).slice(0, 4).map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+            <div class="card-meta">
+                ${item.github_stars ? `<span>⭐ ${item.github_stars.toLocaleString()}</span>` : ''}
+                ${item.upvotes ? `<span>👍 ${item.upvotes}</span>` : ''}
+                ${item.community_slug ? `<span>📍 ${item.community_slug}</span>` : ''}
+            </div>
         </div>
-        <div class="card-meta">
-            ${item.github_stars ? `<span>⭐ ${item.github_stars.toLocaleString()}</span>` : ''}
-            ${item.upvotes ? `<span>👍 ${item.upvotes}</span>` : ''}
-            ${item.community_slug ? `<span>📍 ${item.community_slug}</span>` : ''}
+        
+        <!-- Swipe handle zone -->
+        <div class="swipe-handle">
+            <span class="handle-instruction">Drag to rate</span>
+            
+            <div class="direction-hint pass" data-dir="left">
+                <span class="icon">✕</span>
+                <span class="label">Pass</span>
+            </div>
+            
+            <div class="direction-hint save" data-dir="up">
+                <span class="icon">★</span>
+                <span class="label">Save</span>
+            </div>
+            
+            <div class="direction-hint like" data-dir="right">
+                <span class="icon">♥</span>
+                <span class="label">Like</span>
+            </div>
         </div>
     `;
     
-    // Touch/mouse events
-    card.addEventListener('mousedown', startDrag);
-    card.addEventListener('touchstart', startDrag, { passive: false });
+    // Attach events ONLY to the swipe handle
+    const handle = card.querySelector('.swipe-handle');
+    handle.addEventListener('mousedown', startDrag);
+    handle.addEventListener('touchstart', startDrag, { passive: true });
     
     return card;
 }
@@ -469,15 +491,13 @@ function renderCards() {
     const stack = document.getElementById('card-stack');
     stack.innerHTML = '';
     
-    // Show next 3 cards
     for (let i = Math.min(currentIndex + 2, items.length - 1); i >= currentIndex; i--) {
         if (items[i]) {
             const card = createCard(items[i], i);
-            // Offset background cards slightly
             const offset = i - currentIndex;
             if (offset > 0) {
-                card.style.transform = `scale(${1 - offset * 0.05}) translateY(${offset * 8}px)`;
-                card.style.opacity = 1 - offset * 0.2;
+                card.style.transform = `scale(${1 - offset * 0.04}) translateY(${offset * 6}px)`;
+                card.style.opacity = 1 - offset * 0.15;
             }
             stack.appendChild(card);
         }
@@ -494,13 +514,19 @@ function renderCards() {
 function startDrag(e) {
     if (currentIndex >= items.length) return;
     
-    currentCard = e.currentTarget;
+    // Find the parent card
+    currentCard = e.currentTarget.closest('.swipe-card');
+    if (!currentCard) return;
+    
     isDragging = true;
+    dragDirection = null;
     currentCard.classList.add('dragging');
     
     const touch = e.touches ? e.touches[0] : e;
     startX = touch.clientX;
     startY = touch.clientY;
+    currentX = 0;
+    currentY = 0;
     
     document.addEventListener('mousemove', drag);
     document.addEventListener('touchmove', drag, { passive: false });
@@ -510,44 +536,93 @@ function startDrag(e) {
 
 function drag(e) {
     if (!isDragging || !currentCard) return;
-    e.preventDefault();
     
     const touch = e.touches ? e.touches[0] : e;
-    currentX = touch.clientX - startX;
-    currentY = touch.clientY - startY;
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
     
-    const rotate = currentX * 0.08;
+    // Lock direction after initial movement
+    if (!dragDirection && (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8)) {
+        if (deltaY < -8 && Math.abs(deltaY) > Math.abs(deltaX)) {
+            dragDirection = 'vertical';
+        } else {
+            dragDirection = 'horizontal';
+        }
+    }
+    
+    // Apply movement based on locked direction
+    if (dragDirection === 'horizontal') {
+        currentX = deltaX;
+        currentY = 0;
+        e.preventDefault();
+    } else if (dragDirection === 'vertical' && deltaY < 0) {
+        currentX = 0;
+        currentY = Math.max(deltaY, -120);
+        e.preventDefault();
+    } else {
+        return; // Allow default behavior (e.g., scrolling down)
+    }
+    
+    // Transform card
+    const rotate = currentX * 0.06;
     currentCard.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
     
-    // Determine dominant direction
-    const absX = Math.abs(currentX);
-    const absY = Math.abs(currentY);
-    const threshold = 40;
+    // Update visual feedback
+    updateFeedback();
+}
+
+function updateFeedback() {
+    if (!currentCard) return;
     
-    // Remove all drag classes first
+    // Reset classes
     currentCard.classList.remove('drag-left', 'drag-right', 'drag-up');
     
-    // Hide all overlays
-    document.getElementById('overlay-nope').style.opacity = 0;
-    document.getElementById('overlay-like').style.opacity = 0;
-    document.getElementById('overlay-save').style.opacity = 0;
+    // Reset hints
+    currentCard.querySelectorAll('.direction-hint').forEach(h => h.classList.remove('active'));
     
-    if (currentY < -threshold && absY > absX) {
+    // Reset overlays
+    currentCard.querySelectorAll('.swipe-overlay').forEach(o => o.style.opacity = 0);
+    
+    const absX = Math.abs(currentX);
+    const absY = Math.abs(currentY);
+    
+    if (currentY < -30 && absY > absX) {
         // Swiping up
         currentCard.classList.add('drag-up');
-        document.getElementById('overlay-save').style.opacity = Math.min(0.9, absY / 150);
-    } else if (currentX > threshold) {
+        currentCard.querySelector('.direction-hint.save').classList.add('active');
+        currentCard.querySelector('.swipe-overlay.save').style.opacity = Math.min(absY / THRESHOLD_Y, 1) * 0.8;
+        
+        // Haptic at threshold
+        if (currentY < -THRESHOLD_Y && !currentCard.hapticFired) {
+            if (navigator.vibrate) navigator.vibrate(10);
+            currentCard.hapticFired = true;
+        }
+    } else if (currentX > 30) {
         // Swiping right
         currentCard.classList.add('drag-right');
-        document.getElementById('overlay-like').style.opacity = Math.min(0.9, absX / 150);
-    } else if (currentX < -threshold) {
+        currentCard.querySelector('.direction-hint.like').classList.add('active');
+        currentCard.querySelector('.swipe-overlay.like').style.opacity = Math.min(absX / THRESHOLD_X, 1) * 0.8;
+        
+        if (currentX > THRESHOLD_X && !currentCard.hapticFired) {
+            if (navigator.vibrate) navigator.vibrate(10);
+            currentCard.hapticFired = true;
+        }
+    } else if (currentX < -30) {
         // Swiping left
         currentCard.classList.add('drag-left');
-        document.getElementById('overlay-nope').style.opacity = Math.min(0.9, absX / 150);
+        currentCard.querySelector('.direction-hint.pass').classList.add('active');
+        currentCard.querySelector('.swipe-overlay.pass').style.opacity = Math.min(absX / THRESHOLD_X, 1) * 0.8;
+        
+        if (currentX < -THRESHOLD_X && !currentCard.hapticFired) {
+            if (navigator.vibrate) navigator.vibrate(10);
+            currentCard.hapticFired = true;
+        }
+    } else {
+        currentCard.hapticFired = false;
     }
 }
 
-function endDrag(e) {
+function endDrag() {
     if (!isDragging || !currentCard) return;
     
     document.removeEventListener('mousemove', drag);
@@ -558,28 +633,23 @@ function endDrag(e) {
     isDragging = false;
     currentCard.classList.remove('dragging', 'drag-left', 'drag-right', 'drag-up');
     
-    // Hide overlays
-    document.getElementById('overlay-nope').style.opacity = 0;
-    document.getElementById('overlay-like').style.opacity = 0;
-    document.getElementById('overlay-save').style.opacity = 0;
-    
-    const threshold = 80;
-    const absX = Math.abs(currentX);
-    const absY = Math.abs(currentY);
-    
-    if (currentY < -threshold && absY > absX) {
+    // Determine action
+    if (currentY < -THRESHOLD_Y && Math.abs(currentY) > Math.abs(currentX)) {
         completeSwipe('up');
-    } else if (currentX > threshold) {
+    } else if (currentX > THRESHOLD_X) {
         completeSwipe('right');
-    } else if (currentX < -threshold) {
+    } else if (currentX < -THRESHOLD_X) {
         completeSwipe('left');
     } else {
-        // Return to center
+        // Snap back
         currentCard.style.transform = '';
+        currentCard.querySelectorAll('.swipe-overlay').forEach(o => o.style.opacity = 0);
+        currentCard.querySelectorAll('.direction-hint').forEach(h => h.classList.remove('active'));
     }
     
     currentCard = null;
     currentX = currentY = 0;
+    dragDirection = null;
 }
 
 function swipeCard(direction) {
@@ -588,13 +658,6 @@ function swipeCard(direction) {
     if (!topCard) return;
     
     currentCard = topCard;
-    
-    // Show brief overlay feedback
-    const overlayId = direction === 'left' ? 'overlay-nope' : 
-                      direction === 'right' ? 'overlay-like' : 'overlay-save';
-    document.getElementById(overlayId).style.opacity = 0.9;
-    setTimeout(() => document.getElementById(overlayId).style.opacity = 0, 200);
-    
     completeSwipe(direction);
 }
 
@@ -604,10 +667,8 @@ function completeSwipe(direction) {
     const slug = currentCard.dataset.slug;
     const type = currentCard.dataset.type;
     
-    // Animate card away
     currentCard.classList.add(`swiped-${direction}`);
     
-    // Update counts and make API call
     if (direction === 'right') {
         liked++;
         document.getElementById('liked-count').textContent = liked;
@@ -622,7 +683,6 @@ function completeSwipe(direction) {
         bookmarkItem(type, slug);
     }
     
-    // Move to next card
     setTimeout(() => {
         currentIndex++;
         renderCards();
@@ -634,9 +694,7 @@ function voteItem(type, slug, action) {
         ? `/api/v1/articles/${slug}/${action}`
         : `/api/v1/tools/${slug}/${action}`;
     
-    fetch(endpoint, { method: 'POST' })
-        .then(r => r.json())
-        .catch(console.error);
+    fetch(endpoint, { method: 'POST' }).catch(console.error);
 }
 
 function bookmarkItem(type, slug) {
@@ -659,7 +717,6 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowUp') swipeCard('up');
 });
 
-// Initialize
 renderCards();
 </script>
 {% endblock %}
