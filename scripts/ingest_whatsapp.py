@@ -1,15 +1,29 @@
 #!/usr/bin/env python3
-"""Parse WhatsApp chat export and extract tool mentions for vibecheck."""
+"""Parse WhatsApp chat export and extract tool mentions for vibecheck.
 
-import json
+Supports incremental imports with deduplication:
+- Use --since DATE to only process messages after a certain date
+- Use --auto-since to automatically detect the last import date from the database
+- Existing URLs are automatically skipped (deduplication)
+
+Example:
+    # Auto-detect where we left off (recommended for vibez-agi)
+    python ingest_whatsapp.py chat.zip --community agi --auto-since
+    
+    # Process only messages since a specific date
+    python ingest_whatsapp.py chat.zip --since 2026-02-01
+    
+    # Dry run to see what would be imported
+    python ingest_whatsapp.py chat.zip --auto-since --dry-run
+"""
+
 import re
-import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-import httpx
+import httpx  # type: ignore[import-not-found]
 
 # vibecheck API
 VIBECHECK_API = "https://vibecheck.ito.com/api/v1"
@@ -246,13 +260,182 @@ def push_to_vibecheck(tools: list[dict], community: str = 'agi', dry_run: bool =
                 print(f"  ✗ {tool['slug']}: {e}")
 
 
+def get_existing_urls() -> set[str]:
+    """Fetch existing article URLs from database for deduplication."""
+    try:
+        resp = httpx.get(f"{VIBECHECK_API}/articles", params={"per_page": 1000}, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            articles = data.get("articles", [])
+            return {a.get("url", "") for a in articles if a.get("url")}
+    except Exception as e:
+        print(f"Warning: Could not fetch existing URLs: {e}")
+    return set()
+
+
+def get_last_import_date() -> datetime | None:
+    """Get the most recent mention date from the database."""
+    try:
+        # Query the API for the most recent article/mention
+        resp = httpx.get(
+            f"{VIBECHECK_API}/articles",
+            params={"per_page": 1, "sort_by": "discovered_at", "sort_order": "desc"},
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            articles = data.get("articles", [])
+            if articles:
+                discovered_at = articles[0].get("discovered_at")
+                if discovered_at:
+                    # Parse ISO format
+                    return datetime.fromisoformat(discovered_at.replace("Z", "+00:00"))
+    except Exception as e:
+        print(f"Warning: Could not fetch last import date: {e}")
+    return None
+
+
+def extract_articles_from_message(msg: dict) -> list[dict]:
+    """Extract article URLs from a message."""
+    articles = []
+    urls = re.findall(r'https?://[^\s\r\n\]]+', msg['text'])
+    
+    # URLs to skip (social media, video, chat platforms)
+    skip_patterns = [
+        'youtube.com/watch', 'youtu.be', 'twitter.com', 'x.com/status',
+        'instagram.com', 'facebook.com', 'tiktok.com', 'linkedin.com/posts',
+        'whatsapp.com', 't.me', 'discord.gg', 'meet.google.com', 'zoom.us',
+        'github.com',  # Tools are handled separately
+    ]
+    
+    for url in urls:
+        url = url.rstrip('.,;:!?)>"\']\r\n')
+        
+        # Skip non-article URLs
+        if any(skip in url.lower() for skip in skip_patterns):
+            continue
+            
+        articles.append({
+            'url': url,
+            'mentioned_at': msg['timestamp'],
+            'context': msg['text'][:200],
+            'sender': msg['sender'],
+        })
+    
+    return articles
+
+
+def generate_title_from_url(url: str) -> str:
+    """Generate a readable title from URL."""
+    parsed = urlparse(url)
+    path = parsed.path.strip('/')
+    
+    # Common patterns
+    if 'blog' in path or 'posts' in path:
+        # Blog post - use last path segment
+        parts = path.split('/')
+        title = parts[-1] if parts else parsed.netloc
+    elif parsed.netloc == 'arxiv.org':
+        return f"arXiv Paper {path.split('/')[-1]}"
+    elif 'github.com' in parsed.netloc:
+        parts = path.split('/')
+        if len(parts) >= 2:
+            return f"{parts[0]}/{parts[1]} on GitHub"
+        return f"GitHub: {path}"
+    else:
+        # Use domain + path
+        title = path.split('/')[-1] if path else parsed.netloc
+    
+    # Clean up
+    title = title.replace('-', ' ').replace('_', ' ')
+    title = re.sub(r'\.(html?|php|aspx?)$', '', title)
+    return title.title() if title else parsed.netloc
+
+
+def push_articles_to_vibecheck(
+    articles: list[dict],
+    existing_urls: set[str],
+    community: str = 'agi',
+    dry_run: bool = False,
+) -> tuple[int, int]:
+    """Push extracted articles to vibecheck API. Returns (created, skipped)."""
+    # Deduplicate by URL
+    seen = {}
+    for article in articles:
+        url = article['url']
+        if url not in seen and url not in existing_urls:
+            seen[url] = article
+    
+    articles = list(seen.values())
+    skipped = len(existing_urls & {a['url'] for a in articles})
+    
+    print(f"\n=== Processing {len(articles)} new articles ({skipped} already exist) ===\n")
+    
+    if dry_run:
+        for article in articles[:20]:  # Show first 20
+            print(f"  {article['url'][:60]}...")
+            print(f"    Context: {sanitize_context(article.get('context', ''), 80)}")
+            print()
+        if len(articles) > 20:
+            print(f"  ... and {len(articles) - 20} more")
+        return 0, 0
+    
+    created = 0
+    with httpx.Client(timeout=30) as client:
+        for article in articles:
+            # Generate title from URL (API requires title)
+            title = generate_title_from_url(article['url'])
+            
+            payload = {
+                'url': article['url'],
+                'title': title,
+                'community_slug': community,
+                'summary': sanitize_context(article.get('context', ''), 300),
+                'source': 'whatsapp-import',
+            }
+            
+            try:
+                resp = client.post(f"{VIBECHECK_API}/articles", json=payload)
+                if resp.status_code == 200:
+                    created += 1
+                    print(f"  ✓ {article['url'][:60]}...")
+                elif resp.status_code == 409 or resp.status_code == 422:
+                    # Already exists or validation error - skip silently
+                    pass
+                else:
+                    print(f"  ✗ {article['url'][:40]}: {resp.status_code}")
+            except Exception as e:
+                print(f"  ✗ {article['url'][:40]}: {e}")
+    
+    return created, len(articles) - created
+
+
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='Ingest WhatsApp chat export to vibecheck')
-    parser.add_argument('chatfile', help='Path to WhatsApp _chat.txt export')
+    parser = argparse.ArgumentParser(
+        description='Ingest WhatsApp chat export to vibecheck',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Auto-detect where we left off (recommended for vibez-agi incremental imports)
+  python ingest_whatsapp.py chat.zip --community agi --auto-since
+  
+  # Process only messages since a specific date
+  python ingest_whatsapp.py chat.zip --since 2026-02-01
+  
+  # Dry run to see what would be imported
+  python ingest_whatsapp.py chat.zip --auto-since --dry-run
+        """,
+    )
+    parser.add_argument('chatfile', help='Path to WhatsApp chat export (.zip or .txt)')
     parser.add_argument('--community', default='agi', help='Community slug (default: agi)')
-    parser.add_argument('--dry-run', action='store_true', help='Print what would be pushed without pushing')
+    parser.add_argument('--dry-run', action='store_true', help='Print what would be imported without pushing')
+    parser.add_argument('--since', help='Only process messages after this date (YYYY-MM-DD)')
+    parser.add_argument('--auto-since', action='store_true', 
+                        help='Auto-detect last import date from database')
+    parser.add_argument('--articles-only', action='store_true', help='Only import articles, skip tools')
+    parser.add_argument('--tools-only', action='store_true', help='Only import tools, skip articles')
     args = parser.parse_args()
     
     filepath = Path(args.chatfile)
@@ -260,20 +443,73 @@ def main():
         print(f"Error: {filepath} not found")
         return 1
     
-    print(f"Parsing {filepath}...")
+    # Determine since date
+    since_date = None
+    if args.auto_since:
+        since_date = get_last_import_date()
+        if since_date:
+            print(f"Auto-detected last import: {since_date.strftime('%Y-%m-%d %H:%M')}")
+        else:
+            print("No previous imports found, processing all messages")
+    elif args.since:
+        try:
+            since_date = datetime.strptime(args.since, "%Y-%m-%d")
+            print(f"Processing messages since: {since_date.strftime('%Y-%m-%d')}")
+        except ValueError:
+            print(f"Error: Invalid date format '{args.since}'. Use YYYY-MM-DD")
+            return 1
+    
+    # Get existing URLs for deduplication
+    print("Fetching existing content for deduplication...")
+    existing_urls = get_existing_urls()
+    print(f"Found {len(existing_urls)} existing URLs")
+    
+    print(f"\nParsing {filepath}...")
     messages = parse_whatsapp_export(filepath)
-    print(f"Found {len(messages)} messages")
+    print(f"Found {len(messages)} total messages")
     
-    print("Extracting tool mentions...")
-    all_tools = []
-    for msg in messages:
-        tools = extract_tools_from_message(msg)
-        all_tools.extend(tools)
+    # Filter by date if specified
+    if since_date:
+        original_count = len(messages)
+        # Make since_date naive if it's aware (for comparison with naive timestamps)
+        since_date_naive = since_date.replace(tzinfo=None) if since_date.tzinfo else since_date
+        messages = [
+            m for m in messages
+            if datetime.fromisoformat(m['timestamp']) > since_date_naive
+        ]
+        print(f"Filtered to {len(messages)} messages after {since_date.strftime('%Y-%m-%d')}")
+        print(f"  (Skipped {original_count - len(messages)} older messages)")
     
-    print(f"Found {len(all_tools)} tool mentions")
+    if not messages:
+        print("\nNo new messages to process.")
+        return 0
     
-    push_to_vibecheck(all_tools, community=args.community, dry_run=args.dry_run)
+    # Extract and push tools
+    if not args.articles_only:
+        print("\nExtracting tool mentions...")
+        all_tools = []
+        for msg in messages:
+            tools = extract_tools_from_message(msg)
+            all_tools.extend(tools)
+        print(f"Found {len(all_tools)} tool mentions")
+        push_to_vibecheck(all_tools, community=args.community, dry_run=args.dry_run)
     
+    # Extract and push articles
+    if not args.tools_only:
+        print("\nExtracting article URLs...")
+        all_articles = []
+        for msg in messages:
+            articles = extract_articles_from_message(msg)
+            all_articles.extend(articles)
+        print(f"Found {len(all_articles)} article URLs")
+        push_articles_to_vibecheck(
+            all_articles,
+            existing_urls,
+            community=args.community,
+            dry_run=args.dry_run,
+        )
+    
+    print("\nDone!")
     return 0
 
 
