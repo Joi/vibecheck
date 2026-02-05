@@ -141,80 +141,81 @@
         margin-top: 0.75rem;
     }
     
-    /* === SWIPE HANDLE ZONE (bottom 30%) === */
+    /* === SWIPE HANDLE ZONE (bottom) === */
     .swipe-handle {
-        height: 110px;
-        min-height: 110px;
+        height: 100px;
+        min-height: 100px;
         touch-action: none; /* Capture ALL touch here for swiping */
-        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.15));
+        background: linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.2));
         border-top: 1px solid #313244;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 1.5rem;
         position: relative;
         cursor: grab;
+        
+        /* Column layout: instruction on top, hints row below */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        gap: 0.4rem;
     }
     
     .swipe-handle:active {
         cursor: grabbing;
     }
     
-    /* Grip indicator */
-    .swipe-handle::after {
-        content: '';
-        position: absolute;
-        bottom: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 36px;
-        height: 4px;
-        background: #45475a;
-        border-radius: 2px;
+    .handle-instruction {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #6c7086;
+        margin-bottom: 0.25rem;
     }
     
-    /* Direction indicators in handle */
+    /* Container for direction hints - ALWAYS horizontal row */
+    .direction-hints {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 300px;
+        flex-shrink: 0;
+    }
+    
+    /* Each direction hint */
     .direction-hint {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.3rem;
-        opacity: 0.5;
+        gap: 0.2rem;
+        opacity: 0.6;
         transition: opacity 0.15s, transform 0.15s;
+        min-width: 70px;
+        padding: 0.25rem;
     }
     
     .direction-hint.active {
         opacity: 1;
-        transform: scale(1.15);
+        transform: scale(1.1);
     }
     
     .direction-hint .icon {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         line-height: 1;
     }
     
     .direction-hint .label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         font-weight: 600;
         letter-spacing: 0.5px;
+        white-space: nowrap;
     }
     
     .direction-hint.pass { color: #f38ba8; }
-    .direction-hint.save { color: #89b4fa; }
+    .direction-hint.save { color: #f9e2af; }  /* Gold for save */
     .direction-hint.like { color: #a6e3a1; }
-    
-    /* Instruction text at top of handle */
-    .handle-instruction {
-        position: absolute;
-        top: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 0.7rem;
-        color: #6c7086;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
     
     /* === OVERLAYS === */
     .swipe-overlay {
@@ -460,21 +461,23 @@ function createCard(item, index) {
         
         <!-- Swipe handle zone -->
         <div class="swipe-handle">
-            <span class="handle-instruction">Drag to rate</span>
+            <span class="handle-instruction">Swipe this area</span>
             
-            <div class="direction-hint pass" data-dir="left">
-                <span class="icon">✕</span>
-                <span class="label">Pass</span>
-            </div>
-            
-            <div class="direction-hint save" data-dir="up">
-                <span class="icon">★</span>
-                <span class="label">Save</span>
-            </div>
-            
-            <div class="direction-hint like" data-dir="right">
-                <span class="icon">♥</span>
-                <span class="label">Like</span>
+            <div class="direction-hints">
+                <div class="direction-hint pass" data-dir="left">
+                    <span class="icon">←</span>
+                    <span class="label">Pass</span>
+                </div>
+                
+                <div class="direction-hint save" data-dir="up">
+                    <span class="icon">↑</span>
+                    <span class="label">Save</span>
+                </div>
+                
+                <div class="direction-hint like" data-dir="right">
+                    <span class="icon">→</span>
+                    <span class="label">Like</span>
+                </div>
             </div>
         </div>
     `;
