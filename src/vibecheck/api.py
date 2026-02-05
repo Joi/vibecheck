@@ -752,6 +752,35 @@ async def create_article(
     return ArticleResponse(**result)
 
 
+@app.patch(f"{settings.api_prefix}/articles/{{slug}}")
+async def update_article(
+    slug: str,
+    title: Optional[str] = None,
+    summary: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+):
+    """Update an article's metadata (title, summary, tags)."""
+    admin_db = ArticlesDB(client=get_admin_client())
+    
+    # Build update data
+    update_data = {}
+    if title is not None:
+        update_data["title"] = title
+    if summary is not None:
+        update_data["summary"] = summary
+    if tags is not None:
+        update_data["tags"] = tags
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update fields provided")
+    
+    result = admin_db.update_article(slug, update_data)
+    if not result:
+        raise HTTPException(status_code=404, detail=f"Article '{slug}' not found")
+    
+    return ArticleResponse(**result)
+
+
 @app.post(f"{settings.api_prefix}/articles/{{slug}}/upvote")
 async def upvote_article(
     slug: str,
