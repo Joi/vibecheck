@@ -453,7 +453,8 @@ class ArticlesDB:
             .maybe_single()
             .execute()
         )
-        return result.data
+        # maybe_single() returns None when no row found
+        return result.data if result else None
 
     def create_article(self, data: dict) -> dict:
         """Create a new article."""
