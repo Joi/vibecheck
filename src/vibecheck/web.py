@@ -329,6 +329,7 @@ async def articles_list(
         "request": request,
         "active_page": "articles",
         "articles": articles,
+        "total_articles": result.get("total", 0),
         "page": page,
         "has_more": page * per_page < result.get("total", 0),
     })

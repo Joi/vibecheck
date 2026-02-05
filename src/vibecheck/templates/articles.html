@@ -37,9 +37,30 @@
     {% endfor %}
 </div>
 
-{% if has_more %}
-<div style="text-align: center; margin-top: 2rem;">
-    <a href="/articles?page={{ page + 1 }}" class="btn btn-secondary">Load More</a>
+{% if total_articles is defined %}
+{% set total_pages = (total_articles + 19) // 20 %}
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/articles?page={{ page - 1 }}" class="btn btn-secondary">&larr; Previous</a>
+    {% endif %}
+    
+    <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+    
+    {% if page < total_pages %}
+    <a href="/articles?page={{ page + 1 }}" class="btn btn-secondary">Next &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% elif has_more %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/articles?page={{ page - 1 }}" class="btn btn-secondary">&larr; Previous</a>
+    {% endif %}
+    
+    <span class="page-info">Page {{ page }}</span>
+    
+    <a href="/articles?page={{ page + 1 }}" class="btn btn-secondary">Next &rarr;</a>
 </div>
 {% endif %}
 

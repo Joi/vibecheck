@@ -65,9 +65,18 @@
 </div>
 {% endif %}
 
-{% if has_more %}
-<div style="text-align: center; margin-top: 2rem;">
-    <a href="/tools?page={{ page + 1 }}" class="btn btn-secondary">Load More</a>
+{% set total_pages = (total_tools + 23) // 24 %}
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/tools?page={{ page - 1 }}" class="btn btn-secondary">&larr; Previous</a>
+    {% endif %}
+    
+    <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+    
+    {% if page < total_pages %}
+    <a href="/tools?page={{ page + 1 }}" class="btn btn-secondary">Next &rarr;</a>
+    {% endif %}
 </div>
 {% endif %}
 {% endblock %}
