@@ -122,6 +122,22 @@ class ToolsDB:
         )
         return result.data or []
 
+    def upvote_tool(self, slug: str) -> dict:
+        """Increment upvote count for a tool."""
+        tool = self.get_tool(slug)
+        if not tool:
+            raise ValueError(f"Tool '{slug}' not found")
+        new_count = (tool.get("upvotes") or 0) + 1
+        return self.update_tool(slug, {"upvotes": new_count})
+
+    def downvote_tool(self, slug: str) -> dict:
+        """Increment downvote count for a tool."""
+        tool = self.get_tool(slug)
+        if not tool:
+            raise ValueError(f"Tool '{slug}' not found")
+        new_count = (tool.get("downvotes") or 0) + 1
+        return self.update_tool(slug, {"downvotes": new_count})
+
 
 class EvaluationsDB:
     """Database operations for evaluations."""
@@ -493,6 +509,15 @@ class ArticlesDB:
 
         new_count = (article.get("upvotes") or 0) + 1
         return self.update_article(slug, {"upvotes": new_count})
+
+    def downvote_article(self, slug: str) -> dict:
+        """Increment downvote count for an article."""
+        article = self.get_article(slug)
+        if not article:
+            raise ValueError(f"Article '{slug}' not found")
+
+        new_count = (article.get("downvotes") or 0) + 1
+        return self.update_article(slug, {"downvotes": new_count})
 
     def search_articles(self, query: str, limit: int = 20) -> list[dict]:
         """Search articles by title or summary."""

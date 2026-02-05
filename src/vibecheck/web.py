@@ -335,6 +335,66 @@ async def articles_list(
     })
 
 
+@router.get("/bookmarks", response_class=HTMLResponse)
+async def bookmarks_page(request: Request):
+    """Bookmarks page - items are stored in localStorage and rendered client-side."""
+    return get_templates().TemplateResponse("bookmarks.html", {
+        "request": request,
+        "active_page": "bookmarks",
+    })
+
+
+@router.get("/discover", response_class=HTMLResponse)
+async def discover_page(
+    request: Request,
+    mode: str = Query("mixed", regex="^(tools|articles|mixed)$"),
+    tools_db: ToolsDB = Depends(get_tools_db),
+    articles_db: ArticlesDB = Depends(get_articles_db),
+):
+    """Tinder-like swipe interface for discovering tools and articles."""
+    items = []
+    
+    if mode in ("tools", "mixed"):
+        # Get random tools (order by random-ish - using created_at for now)
+        tools_result = tools_db.list_tools(page=1, per_page=30, sort_by="created_at")
+        for tool in tools_result.get("tools", []):
+            items.append({
+                "type": "tool",
+                "slug": tool["slug"],
+                "name": tool.get("name", tool["slug"]),
+                "description": tool.get("description", ""),
+                "categories": tool.get("categories", []),
+                "github_stars": tool.get("github_stars"),
+                "upvotes": tool.get("upvotes", 0),
+                "url": f"/tools/{tool['slug']}",
+            })
+    
+    if mode in ("articles", "mixed"):
+        articles_result = articles_db.list_articles(page=1, per_page=30)
+        for article in articles_result.get("articles", []):
+            items.append({
+                "type": "article",
+                "slug": article["slug"],
+                "title": article.get("title", "Untitled"),
+                "summary": article.get("summary", ""),
+                "tags": article.get("tags", []),
+                "community_slug": article.get("community_slug"),
+                "upvotes": article.get("upvotes", 0),
+                "url": article.get("url", f"/articles/{article['slug']}"),
+            })
+    
+    # Shuffle items for variety
+    import random
+    random.shuffle(items)
+    
+    return get_templates().TemplateResponse("discover.html", {
+        "request": request,
+        "active_page": "discover",
+        "items": items,
+        "mode": mode,
+    })
+
+
 @router.get("/communities", response_class=HTMLResponse)
 async def communities_list(
     request: Request,

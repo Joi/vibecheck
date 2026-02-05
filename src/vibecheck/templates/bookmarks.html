@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Bookmarks{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .bookmarks-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .bookmark-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .bookmark-info h3 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+    }
+    
+    .bookmark-type {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+    }
+    
+    .bookmark-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .remove-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .remove-btn:hover {
+        border-color: #f44336;
+        color: #f44336;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bookmarks-container">
+    <h1>Your Bookmarks</h1>
+    <p class="subtitle">Items you've saved while discovering. Stored locally in your browser.</p>
+    
+    <div id="bookmarks-list">
+        <!-- Populated by JS -->
+    </div>
+    
+    <div class="empty-state" id="empty-state" style="display: none;">
+        <h3>No bookmarks yet</h3>
+        <p>Swipe up on items in <a href="/discover">Discover</a> to save them here.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function loadBookmarks() {
+    const bookmarks = JSON.parse(localStorage.getItem('vibecheck-bookmarks') || '[]');
+    const container = document.getElementById('bookmarks-list');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (bookmarks.length === 0) {
+        container.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+    }
+    
+    container.innerHTML = bookmarks.map((key, index) => {
+        const [type, slug] = key.split(':');
+        const url = type === 'article' ? `/articles/${slug}` : `/tools/${slug}`;
+        return `
+            <div class="bookmark-card" data-key="${key}">
+                <div class="bookmark-info">
+                    <span class="bookmark-type">${type}</span>
+                    <h3><a href="${url}">${slug}</a></h3>
+                </div>
+                <div class="bookmark-actions">
+                    <button class="remove-btn" onclick="removeBookmark('${key}')">Remove</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function removeBookmark(key) {
+    const bookmarks = JSON.parse(localStorage.getItem('vibecheck-bookmarks') || '[]');
+    const index = bookmarks.indexOf(key);
+    if (index > -1) {
+        bookmarks.splice(index, 1);
+        localStorage.setItem('vibecheck-bookmarks', JSON.stringify(bookmarks));
+        loadBookmarks();
+    }
+}
+
+loadBookmarks();
+</script>
+{% endblock %}

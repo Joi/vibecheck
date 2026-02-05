@@ -786,9 +786,50 @@ async def upvote_article(
     slug: str,
     articles_db: ArticlesDB = Depends(get_articles_db),
 ):
-    """Upvote an article."""
+    """Upvote an article (swipe right)."""
     try:
-        article = articles_db.upvote_article(slug)
-        return {"slug": slug, "upvotes": article.get("upvotes", 0)}
+        admin_db = ArticlesDB(client=get_admin_client())
+        article = admin_db.upvote_article(slug)
+        return {"slug": slug, "upvotes": article.get("upvotes", 0), "downvotes": article.get("downvotes", 0)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post(f"{settings.api_prefix}/articles/{{slug}}/downvote")
+async def downvote_article(
+    slug: str,
+):
+    """Downvote an article (swipe left)."""
+    try:
+        admin_db = ArticlesDB(client=get_admin_client())
+        article = admin_db.downvote_article(slug)
+        return {"slug": slug, "upvotes": article.get("upvotes", 0), "downvotes": article.get("downvotes", 0)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post(f"{settings.api_prefix}/tools/{{slug}}/upvote")
+async def upvote_tool(
+    slug: str,
+    tools_db: ToolsDB = Depends(get_tools_db),
+):
+    """Upvote a tool (swipe right)."""
+    try:
+        admin_db = ToolsDB(client=get_admin_client())
+        tool = admin_db.upvote_tool(slug)
+        return {"slug": slug, "upvotes": tool.get("upvotes", 0), "downvotes": tool.get("downvotes", 0)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post(f"{settings.api_prefix}/tools/{{slug}}/downvote")
+async def downvote_tool(
+    slug: str,
+):
+    """Downvote a tool (swipe left)."""
+    try:
+        admin_db = ToolsDB(client=get_admin_client())
+        tool = admin_db.downvote_tool(slug)
+        return {"slug": slug, "upvotes": tool.get("upvotes", 0), "downvotes": tool.get("downvotes", 0)}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
