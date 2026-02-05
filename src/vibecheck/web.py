@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from .database import ArticlesDB, CommunitiesDB, EvaluationsDB, LinksDB, ToolsDB
@@ -104,14 +104,34 @@ def get_links_db() -> LinksDB:
 async def home(
     request: Request,
     page: int = Query(1, ge=1),
+    format: Optional[str] = Query(None),
     tools_db: ToolsDB = Depends(get_tools_db),
     communities_db: CommunitiesDB = Depends(get_communities_db),
     articles_db: ArticlesDB = Depends(get_articles_db),
 ):
-    """Homepage with tools list."""
+    """Homepage with tools list. Use ?format=md for markdown."""
     try:
-        per_page = 24
+        per_page = 24 if format != "md" else 50
         result = tools_db.list_tools(page=page, per_page=per_page, sort_by="created_at", sort_order="desc")
+        
+        # Markdown format for agents
+        if format == "md":
+            tools = result.get("tools", [])
+            md = "# Vibecheck - AI Tools Directory\n\n"
+            md += f"**{result.get('total', 0)} tools** curated for AI practitioners\n\n"
+            md += "## Tools\n\n"
+            for tool in tools:
+                md += f"### [{tool['name']}](/tools/{tool['slug']})\n"
+                if tool.get('description'):
+                    md += f"{tool['description'][:200]}\n"
+                if tool.get('url'):
+                    md += f"- URL: {tool['url']}\n"
+                if tool.get('github_url'):
+                    md += f"- GitHub: {tool['github_url']}\n"
+                md += "\n"
+            md += "\n---\n"
+            md += "Use `/docs?format=md` for API documentation.\n"
+            return Response(content=md, media_type="text/markdown; charset=utf-8")
         
         # Get communities for all tools in ONE query (not N+1)
         tools = result.get("tools", [])
@@ -193,12 +213,13 @@ async def tools_list(
 async def tool_detail(
     request: Request,
     slug: str,
+    format: Optional[str] = Query(None),
     tools_db: ToolsDB = Depends(get_tools_db),
     communities_db: CommunitiesDB = Depends(get_communities_db),
     evaluations_db: EvaluationsDB = Depends(get_evaluations_db),
     links_db: LinksDB = Depends(get_links_db),
 ):
-    """Tool detail page."""
+    """Tool detail page. Use ?format=md for markdown."""
     try:
         tool = tools_db.get_tool(slug)
         if not tool:
@@ -227,6 +248,37 @@ async def tool_detail(
                     "name": c["communities"]["name"],
                 })
         
+        # Markdown format for agents
+        if format == "md":
+            md = f"# {tool['name']}\n\n"
+            if tool.get('description'):
+                md += f"{tool['description']}\n\n"
+            if tool.get('url'):
+                md += f"**URL:** {tool['url']}\n"
+            if tool.get('github_url'):
+                md += f"**GitHub:** {tool['github_url']}\n"
+            if tool.get('github_stars'):
+                md += f"**Stars:** {tool['github_stars']}\n"
+            md += "\n"
+            
+            if evaluations:
+                md += "## Evaluations\n\n"
+                for ev in evaluations:
+                    md += f"- **Verdict:** {ev.get('verdict', 'N/A')}\n"
+                    md += f"- **Works:** {'Yes' if ev.get('works') else 'No'}\n"
+                    md += f"- **Maintained:** {'Yes' if ev.get('actively_maintained') else 'No'}\n"
+                    if ev.get('notes'):
+                        md += f"- **Notes:** {ev['notes']}\n"
+                    md += "\n"
+            
+            if links:
+                md += "## Links\n\n"
+                for link in links:
+                    md += f"- [{link.get('title', link['url'])}]({link['url']})\n"
+                md += "\n"
+            
+            return Response(content=md, media_type="text/markdown; charset=utf-8")
+        
         return get_templates().TemplateResponse("tool.html", {
             "request": request,
             "active_page": "tools",
@@ -250,16 +302,33 @@ async def tool_detail(
 async def articles_list(
     request: Request,
     page: int = Query(1, ge=1),
+    format: Optional[str] = Query(None),
     articles_db: ArticlesDB = Depends(get_articles_db),
 ):
-    """Articles listing page."""
-    per_page = 20
+    """Articles listing page. Use ?format=md for markdown."""
+    per_page = 20 if format != "md" else 50
     result = articles_db.list_articles(page=page, per_page=per_page)
+    articles = result.get("articles", [])
+    
+    # Markdown format for agents
+    if format == "md":
+        md = "# Vibecheck - Articles\n\n"
+        md += f"**{result.get('total', 0)} articles** on vibe coding and AI tools\n\n"
+        for article in articles:
+            md += f"## [{article['title']}]({article['url']})\n"
+            if article.get('summary'):
+                md += f"{article['summary'][:300]}\n"
+            if article.get('community_slug'):
+                md += f"- Community: {article['community_slug']}\n"
+            md += "\n"
+        md += "\n---\n"
+        md += "Use `/docs?format=md` for API documentation.\n"
+        return Response(content=md, media_type="text/markdown; charset=utf-8")
     
     return get_templates().TemplateResponse("articles.html", {
         "request": request,
         "active_page": "articles",
-        "articles": result.get("articles", []),
+        "articles": articles,
         "page": page,
         "has_more": page * per_page < result.get("total", 0),
     })
@@ -319,3 +388,153 @@ async def community_detail(
         }, status_code=500)
 
 
+
+# ============== Documentation ==============
+
+@router.get("/docs", response_class=HTMLResponse)
+async def docs_page(
+    request: Request,
+    format: Optional[str] = Query(None),
+):
+    """API documentation page. Use ?format=md for markdown."""
+    if format == "md":
+        return Response(
+            content=DOCS_MARKDOWN,
+            media_type="text/markdown; charset=utf-8",
+        )
+    
+    return get_templates().TemplateResponse("docs.html", {
+        "request": request,
+        "active_page": "docs",
+    })
+
+
+DOCS_MARKDOWN = """# Vibecheck API Documentation
+
+REST API for AI tools intelligence.
+
+## For AI Agents
+
+Add `?format=md` to any page URL to get markdown instead of HTML:
+- `/docs?format=md` - This documentation
+- `/?format=md` - Tools list
+- `/articles?format=md` - Articles list  
+- `/tools/{slug}?format=md` - Tool details
+
+## Base URL
+
+```
+https://vibecheck.ito.com/api/v1
+```
+
+All API endpoints return JSON. CORS is enabled for all origins.
+
+## Tools
+
+### GET /tools
+List all tools with pagination.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| page | int | Page number (default: 1) |
+| per_page | int | Items per page (default: 20, max: 100) |
+| category | string | Filter by category slug |
+| sort_by | string | Sort field: created_at, name, github_stars |
+| sort_order | string | asc or desc |
+
+### GET /tools/{slug}
+Get tool details including evaluations and links.
+
+### POST /tools
+Create a new tool.
+
+```json
+{
+  "name": "Tool Name",
+  "url": "https://example.com",
+  "github_url": "https://github.com/org/repo",
+  "description": "Tool description",
+  "categories": ["ide", "agent"]
+}
+```
+
+### PATCH /tools/{slug}
+Update an existing tool.
+
+## Articles
+
+### GET /articles
+List articles with pagination.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| page | int | Page number (default: 1) |
+| per_page | int | Items per page (default: 20) |
+| community | string | Filter by community slug |
+
+### GET /articles/{slug}
+Get article details.
+
+### POST /articles
+Create a new article.
+
+```json
+{
+  "url": "https://example.com/article",
+  "title": "Article Title",
+  "summary": "Brief description",
+  "community_slug": "agi",
+  "tags": ["vibe-coding", "agents"]
+}
+```
+
+## Search
+
+### GET /search
+Search tools and articles.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| q | string | Search query (required) |
+| type | string | Filter: tools, articles, or all |
+| limit | int | Max results (default: 20) |
+
+## Communities
+
+### GET /communities
+List all communities.
+
+### GET /communities/{slug}
+Get community details with tool count.
+
+## Evaluations
+
+### POST /tools/{slug}/evaluations
+Add or update an evaluation.
+
+```json
+{
+  "works": true,
+  "actively_maintained": true,
+  "verdict": "solid",
+  "security_notes": "No concerns",
+  "notes": "Works great"
+}
+```
+
+**Verdict Values:**
+- `essential` - Daily driver, highly recommended
+- `solid` - Works well, good choice
+- `situational` - Right for specific use cases
+- `caution` - Works but has issues
+- `avoid` - Broken or dangerous
+
+## OpenAPI
+
+- [/api/docs](/api/docs) - Swagger UI
+- [/api/redoc](/api/redoc) - ReDoc
+- [/api/openapi.json](/api/openapi.json) - OpenAPI spec
+"""

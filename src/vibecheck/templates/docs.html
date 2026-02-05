@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation{% endblock %}
+
+{% block extra_head %}
+<style>
+    .docs-content {
+        max-width: 800px;
+    }
+    
+    .docs-section {
+        margin-bottom: 3rem;
+    }
+    
+    .docs-section h2 {
+        color: var(--accent);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .docs-section h3 {
+        font-size: 1.125rem;
+        margin: 1.5rem 0 0.75rem 0;
+    }
+    
+    .endpoint {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .endpoint-method {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+    
+    .method-get { background: #22c55e20; color: #22c55e; }
+    .method-post { background: #3b82f620; color: #3b82f6; }
+    .method-patch { background: #f59e0b20; color: #f59e0b; }
+    .method-delete { background: #ef444420; color: #ef4444; }
+    
+    .endpoint-path {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .endpoint-desc {
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    code {
+        background: var(--bg-tertiary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.875em;
+    }
+    
+    pre {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+    
+    pre code {
+        background: none;
+        padding: 0;
+    }
+    
+    .agent-note {
+        background: rgba(168, 85, 247, 0.1);
+        border: 1px solid var(--accent-dim);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .agent-note h4 {
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+    
+    th, td {
+        text-align: left;
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    th {
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="docs-content">
+    <h1>API Documentation</h1>
+    <p class="subtitle">REST API for AI tools intelligence</p>
+    
+    <div class="agent-note">
+        <h4>For AI Agents</h4>
+        <p>Add <code>?format=md</code> to any page URL to get markdown instead of HTML. This works on:</p>
+        <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+            <li><code>/docs?format=md</code> - This documentation</li>
+            <li><code>/?format=md</code> - Tools list</li>
+            <li><code>/articles?format=md</code> - Articles list</li>
+            <li><code>/tools/{slug}?format=md</code> - Tool details</li>
+        </ul>
+        <p style="margin-top: 0.75rem;">Or use the JSON API endpoints below for structured data.</p>
+    </div>
+    
+    <div class="docs-section">
+        <h2>Base URL</h2>
+        <pre><code>https://vibecheck.ito.com/api/v1</code></pre>
+        <p>All API endpoints return JSON. CORS is enabled for all origins.</p>
+    </div>
+    
+    <div class="docs-section">
+        <h2>Tools</h2>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/tools</span>
+            <p class="endpoint-desc">List all tools with pagination and filtering.</p>
+        </div>
+        
+        <h3>Query Parameters</h3>
+        <table>
+            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+            <tr><td><code>page</code></td><td>int</td><td>Page number (default: 1)</td></tr>
+            <tr><td><code>per_page</code></td><td>int</td><td>Items per page (default: 20, max: 100)</td></tr>
+            <tr><td><code>category</code></td><td>string</td><td>Filter by category slug</td></tr>
+            <tr><td><code>sort_by</code></td><td>string</td><td>Sort field: created_at, name, github_stars</td></tr>
+            <tr><td><code>sort_order</code></td><td>string</td><td>asc or desc</td></tr>
+        </table>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/tools/{slug}</span>
+            <p class="endpoint-desc">Get tool details including evaluations and links.</p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/tools</span>
+            <p class="endpoint-desc">Create a new tool entry.</p>
+        </div>
+        
+        <h3>Request Body</h3>
+        <pre><code>{
+  "name": "Tool Name",
+  "url": "https://example.com",
+  "github_url": "https://github.com/org/repo",
+  "description": "Tool description",
+  "categories": ["ide", "agent"]
+}</code></pre>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-patch">PATCH</span>
+            <span class="endpoint-path">/tools/{slug}</span>
+            <p class="endpoint-desc">Update an existing tool.</p>
+        </div>
+    </div>
+    
+    <div class="docs-section">
+        <h2>Articles</h2>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/articles</span>
+            <p class="endpoint-desc">List articles with pagination.</p>
+        </div>
+        
+        <h3>Query Parameters</h3>
+        <table>
+            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+            <tr><td><code>page</code></td><td>int</td><td>Page number (default: 1)</td></tr>
+            <tr><td><code>per_page</code></td><td>int</td><td>Items per page (default: 20)</td></tr>
+            <tr><td><code>community</code></td><td>string</td><td>Filter by community slug</td></tr>
+        </table>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/articles/{slug}</span>
+            <p class="endpoint-desc">Get article details.</p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/articles</span>
+            <p class="endpoint-desc">Create a new article.</p>
+        </div>
+        
+        <h3>Request Body</h3>
+        <pre><code>{
+  "url": "https://example.com/article",
+  "title": "Article Title",
+  "summary": "Brief description",
+  "community_slug": "agi",
+  "tags": ["vibe-coding", "agents"]
+}</code></pre>
+    </div>
+    
+    <div class="docs-section">
+        <h2>Search</h2>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/search</span>
+            <p class="endpoint-desc">Search tools and articles.</p>
+        </div>
+        
+        <h3>Query Parameters</h3>
+        <table>
+            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+            <tr><td><code>q</code></td><td>string</td><td>Search query (required)</td></tr>
+            <tr><td><code>type</code></td><td>string</td><td>Filter: tools, articles, or all</td></tr>
+            <tr><td><code>limit</code></td><td>int</td><td>Max results (default: 20)</td></tr>
+        </table>
+    </div>
+    
+    <div class="docs-section">
+        <h2>Communities</h2>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/communities</span>
+            <p class="endpoint-desc">List all communities.</p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/communities/{slug}</span>
+            <p class="endpoint-desc">Get community details with tool count.</p>
+        </div>
+    </div>
+    
+    <div class="docs-section">
+        <h2>Evaluations</h2>
+        
+        <div class="endpoint">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/tools/{slug}/evaluations</span>
+            <p class="endpoint-desc">Add or update an evaluation for a tool.</p>
+        </div>
+        
+        <h3>Request Body</h3>
+        <pre><code>{
+  "works": true,
+  "actively_maintained": true,
+  "verdict": "solid",
+  "security_notes": "No concerns",
+  "notes": "Works great for daily use"
+}</code></pre>
+        
+        <h3>Verdict Values</h3>
+        <table>
+            <tr><th>Value</th><th>Meaning</th></tr>
+            <tr><td><code>essential</code></td><td>Daily driver, highly recommended</td></tr>
+            <tr><td><code>solid</code></td><td>Works well, good choice</td></tr>
+            <tr><td><code>situational</code></td><td>Right tool for specific use cases</td></tr>
+            <tr><td><code>caution</code></td><td>Works but has significant issues</td></tr>
+            <tr><td><code>avoid</code></td><td>Broken, abandoned, or dangerous</td></tr>
+        </table>
+    </div>
+    
+    <div class="docs-section">
+        <h2>OpenAPI / Swagger</h2>
+        <p>Interactive API documentation is available at:</p>
+        <ul style="margin: 1rem 0 0 1.5rem;">
+            <li><a href="/api/docs">Swagger UI</a> - Interactive testing</li>
+            <li><a href="/api/redoc">ReDoc</a> - Clean documentation</li>
+            <li><a href="/api/openapi.json">OpenAPI JSON</a> - Machine-readable spec</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
