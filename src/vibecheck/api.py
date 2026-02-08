@@ -185,7 +185,7 @@ async def create_tool(
     """Create a new tool. Requires authentication."""
     # TODO: Add authentication
     try:
-        result = db.create_tool(tool.model_dump(exclude_none=True))
+        result = db.create_tool(tool.model_dump(exclude_none=True, mode="json"))
         # Add empty communities list (not stored in tools table, fetched from tool_communities)
         result["communities"] = []
         return ToolResponse(**result)
