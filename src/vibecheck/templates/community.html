@@ -3,6 +3,12 @@
 {% block title %}{{ community.name }}{% endblock %}
 
 {% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/communities">Communities</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-current">{{ community.name }}</span>
+</nav>
+
 <h1>{{ community.name }}</h1>
 {% if community.description %}
 <p class="subtitle">{{ community.description }}</p>

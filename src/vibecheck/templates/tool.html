@@ -2,8 +2,44 @@
 
 {% block title %}{{ tool.name }}{% endblock %}
 
+{% block extra_styles %}
+<style>
+    .eval-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .eval-status::before {
+        content: '';
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+    }
+    .eval-status--works { color: var(--success, #22c55e); }
+    .eval-status--issues { color: #f87171; }
+    .eval-status--maintained { color: var(--accent); }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="tool-header">
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Tools</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-current">{{ tool.name }}</span>
+</nav>
+
+<nav class="section-nav" aria-label="Page sections">
+    <a href="#overview">Overview</a>
+    <a href="#communities">Communities</a>
+    <a href="#evaluations">Evaluations</a>
+    <a href="#links">Links</a>
+    <a href="#mentions">Mentions</a>
+</nav>
+
+<div id="overview" class="tool-header">
     <h1>{{ tool.name }}</h1>
     {% if tool.description %}
     <p class="subtitle">{{ tool.description }}</p>
@@ -52,7 +88,7 @@
 {% endif %}
 
 {% if communities %}
-<div class="tool-section">
+<div id="communities" class="tool-section">
     <h2>Discussed In</h2>
     <div class="card-tags" style="margin-top: 0.5rem;">
         {% for comm in communities %}
@@ -65,14 +101,14 @@
 {% endif %}
 
 {% if evaluations %}
-<div class="tool-section">
+<div id="evaluations" class="tool-section">
     <h2>Community Evaluations</h2>
     {% for eval in evaluations %}
     <div class="card" style="margin-top: 1rem;">
         <div class="card-header">
             <span>
-                {% if eval.works %}✅ Works{% else %}❌ Issues{% endif %}
-                {% if eval.actively_maintained %} • 🔄 Actively Maintained{% endif %}
+                {% if eval.works %}<span class="eval-status eval-status--works">Works</span>{% else %}<span class="eval-status eval-status--issues">Issues</span>{% endif %}
+                {% if eval.actively_maintained %} • <span class="eval-status eval-status--maintained">Maintained</span>{% endif %}
             </span>
             <span class="card-meta">{{ eval.created_at|format_date('%b %d, %Y') if eval.created_at else '' }}</span>
         </div>
@@ -83,7 +119,7 @@
         <p style="color: var(--text-secondary); margin-top: 0.5rem;">{{ eval.notes }}</p>
         {% endif %}
         {% if eval.security_notes %}
-        <p style="color: var(--warning); margin-top: 0.5rem;">⚠️ {{ eval.security_notes }}</p>
+        <p style="color: var(--warning); margin-top: 0.5rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -1px; margin-right: 4px;"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z"/></svg>{{ eval.security_notes }}</p>
         {% endif %}
     </div>
     {% endfor %}
@@ -91,7 +127,7 @@
 {% endif %}
 
 {% if links %}
-<div class="tool-section">
+<div id="links" class="tool-section">
     <h2>Related Links</h2>
     {% for link in links %}
     <div class="article-item">
@@ -110,7 +146,7 @@
 {% endif %}
 
 {% if mentions %}
-<div class="tool-section">
+<div id="mentions" class="tool-section">
     <h2>Recent Mentions</h2>
     {% for mention in mentions[:10] %}
     <div class="article-item">

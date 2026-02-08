@@ -84,17 +84,17 @@
 
     /* Exit animations - speed set dynamically by JS */
     .swipe-card.swiped-left {
-        transform: translateX(-130%) rotate(-18deg) !important;
+        transform: translateX(-130%) rotate(-18deg);
         opacity: 0;
     }
 
     .swipe-card.swiped-right {
-        transform: translateX(130%) rotate(18deg) !important;
+        transform: translateX(130%) rotate(18deg);
         opacity: 0;
     }
 
     .swipe-card.swiped-up {
-        transform: translateY(-140%) scale(0.9) !important;
+        transform: translateY(-140%) scale(0.9);
         opacity: 0;
     }
 
@@ -375,6 +375,27 @@
         box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
     }
 
+    /* === UNDO BUTTON === */
+    .undo-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.25rem;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: 50%;
+        color: var(--text-secondary, #999);
+        cursor: pointer;
+        transition: opacity 0.2s, background-color 0.2s;
+    }
+    .undo-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+    .undo-btn:not(:disabled):hover {
+        background: rgba(255,255,255,0.1);
+        color: var(--text, #fff);
+    }
+
     /* === HEADER CONTROLS === */
     .controls-row {
         display: flex;
@@ -564,9 +585,10 @@
     </div>
 
     <div class="action-buttons">
-        <button class="action-btn nope" onclick="swipeCard('left')" aria-label="Pass">&#x2715;</button>
-        <button class="action-btn bookmark" onclick="swipeCard('up')" aria-label="Save">&#x2605;</button>
-        <button class="action-btn like" onclick="swipeCard('right')" aria-label="Like">&#x2665;</button>
+        <button class="action-btn undo-btn" id="undo-btn" disabled aria-label="Undo last swipe" title="Undo (Ctrl+Z)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+        <button class="action-btn nope" onclick="swipeCard('left')" aria-label="Pass"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="action-btn bookmark" onclick="swipeCard('up')" aria-label="Save"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
+        <button class="action-btn like" onclick="swipeCard('right')" aria-label="Like"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
 </div>
 
@@ -586,6 +608,10 @@ let liked = 0, bookmarked = 0, passed = 0;
 let bookmarks = JSON.parse(localStorage.getItem('vibecheck-bookmarks') || '[]');
 
 // Drag state
+// Undo state
+let swipeHistory = [];
+const undoBtn = document.getElementById('undo-btn');
+
 let isDragging = false;
 let startX = 0, startY = 0, currentX = 0, currentY = 0;
 let currentCard = null;
@@ -624,9 +650,9 @@ function createCard(item, index) {
 
     card.innerHTML = `
         <!-- Swipe feedback overlays -->
-        <div class="swipe-overlay pass">&#x2715;</div>
-        <div class="swipe-overlay like">&#x2665;</div>
-        <div class="swipe-overlay save">&#x2605;</div>
+        <div class="swipe-overlay pass"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        <div class="swipe-overlay like"><svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <div class="swipe-overlay save"><svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
 
         <!-- Scrollable content zone -->
         <div class="card-content">
@@ -693,11 +719,11 @@ function renderCards() {
             // Entrance animation for top card after first swipe
             if (offset === 0 && currentIndex > 0) {
                 card.classList.add('entering');
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        card.classList.remove('entering');
-                    });
-                });
+                card.offsetHeight; // force reflow
+                card.style.transition = 'transform 0.4s cubic-bezier(0, 0, 0.2, 1), opacity 0.3s cubic-bezier(0, 0, 0.2, 1)';
+                card.classList.remove('entering');
+                // Restore base transition after entrance completes
+                setTimeout(() => { card.style.transition = ''; }, 450);
             }
         }
     }
@@ -902,11 +928,22 @@ function completeSwipe(direction) {
     const slug = currentCard.dataset.slug;
     const type = currentCard.dataset.type;
 
+    // Save to undo history BEFORE removing (keep only last 1)
+    swipeHistory = [{
+        cardHTML: currentCard.outerHTML,
+        direction: direction,
+        slug: slug,
+        type: type,
+        index: currentIndex
+    }];
+    if (undoBtn) undoBtn.disabled = false;
+
     // Velocity-adaptive exit speed: fast flings fly off quicker
     const vel = Math.abs(velocityX || velocityY);
     const speed = prefersReducedMotion ? 0.01 : (vel > 800 ? 0.2 : vel > 400 ? 0.28 : 0.35);
     currentCard.style.transition = `transform ${speed}s ease-in, opacity ${speed}s ease-in`;
 
+    currentCard.style.transform = '';  // Clear inline drag transform so CSS class takes effect
     currentCard.classList.add(`swiped-${direction}`);
 
     if (direction === 'right') {
@@ -923,7 +960,7 @@ function completeSwipe(direction) {
         bookmarkItem(type, slug);
     }
 
-    const delay = Math.max(speed * 1000 - 50, 180);
+    const delay = Math.max(speed * 1000, 180);
     setTimeout(() => {
         currentIndex++;
         renderCards();
@@ -954,8 +991,58 @@ function setMode(mode) {
     window.location.href = `/discover?mode=${mode}`;
 }
 
+// === UNDO ===
+function undoSwipe() {
+    if (swipeHistory.length === 0) return;
+    const last = swipeHistory.pop();
+    if (undoBtn) undoBtn.disabled = swipeHistory.length === 0;
+
+    // Decrement the appropriate score counter
+    if (last.direction === 'right') {
+        liked = Math.max(0, liked - 1);
+        document.getElementById('liked-count').textContent = liked;
+    } else if (last.direction === 'left') {
+        passed = Math.max(0, passed - 1);
+        document.getElementById('passed-count').textContent = passed;
+    } else if (last.direction === 'up') {
+        bookmarked = Math.max(0, bookmarked - 1);
+        document.getElementById('bookmarked-count').textContent = bookmarked;
+        // Remove from bookmarks localStorage if it was just added
+        const key = `${last.type}:${last.slug}`;
+        const idx = bookmarks.indexOf(key);
+        if (idx !== -1) {
+            bookmarks.splice(idx, 1);
+            localStorage.setItem('vibecheck-bookmarks', JSON.stringify(bookmarks));
+        }
+    }
+
+    // Step back the index and re-render (the item is still in the items array)
+    currentIndex = last.index;
+    renderCards();
+
+    // Fire reverse API call to undo the vote
+    if (last.direction === 'right') {
+        voteItem(last.type, last.slug, 'downvote'); // reverse upvote
+    } else if (last.direction === 'left') {
+        voteItem(last.type, last.slug, 'upvote'); // reverse downvote
+    }
+    // For 'up' (bookmark+upvote), the bookmark was already removed above;
+    // reverse the upvote too
+    if (last.direction === 'up') {
+        voteItem(last.type, last.slug, 'downvote');
+    }
+}
+
+if (undoBtn) {
+    undoBtn.addEventListener('click', undoSwipe);
+}
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+    if ((e.key === 'z' && (e.ctrlKey || e.metaKey)) || e.key === 'u') {
+        e.preventDefault();
+        undoSwipe();
+    }
     if (e.key === 'ArrowLeft') swipeCard('left');
     if (e.key === 'ArrowRight') swipeCard('right');
     if (e.key === 'ArrowUp') swipeCard('up');
