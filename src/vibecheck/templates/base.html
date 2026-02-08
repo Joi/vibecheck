@@ -102,6 +102,35 @@
             border-bottom-color: var(--accent);
         }
         
+        /* Mobile hamburger menu */
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            z-index: 101;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .nav-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        .nav-toggle[aria-expanded="true"] span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .nav-toggle[aria-expanded="true"] span:nth-child(2) {
+            opacity: 0;
+        }
+        .nav-toggle[aria-expanded="true"] span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
         /* Main content */
         main {
             padding: 3rem 0;
@@ -157,7 +186,7 @@
         /* Cards grid */
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: 1fr;
             gap: 1.5rem;
         }
         
@@ -375,18 +404,46 @@
             font-size: 0.9rem;
         }
         
+        @media (min-width: 640px) {
+            .cards {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.75rem;
             }
             
-            .cards {
-                grid-template-columns: 1fr;
+            .nav-toggle {
+                display: flex;
             }
-            
             nav {
-                gap: 1rem;
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(10, 10, 10, 0.98);
+                backdrop-filter: blur(10px);
+                border-bottom: 1px solid var(--border);
+                flex-direction: column;
+                padding: 1rem 1.5rem;
+                gap: 0;
+            }
+            nav.open {
+                display: flex;
+            }
+            nav a {
+                padding: 0.75rem 0;
+                border-bottom: 1px solid var(--border);
+                min-height: 48px;
+                display: flex;
+                align-items: center;
+            }
+            nav a:last-child {
+                border-bottom: none;
             }
             
             .stats {
@@ -398,7 +455,21 @@
                 min-width: 120px;
             }
         }
+
+        /* Accessibility: Respect user's motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .card:hover {
+                transform: none;
+            }
+        }
     </style>
+    {% block extra_styles %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -407,10 +478,14 @@
             <a href="/" class="logo">
                 <span>vibecheck</span>
             </a>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded') === 'false' ? 'true' : 'false'); document.querySelector('nav').classList.toggle('open');">
+                <span></span><span></span><span></span>
+            </button>
             <nav>
                 <a href="/" class="{% if active_page == 'tools' %}active{% endif %}">Tools</a>
                 <a href="/articles" class="{% if active_page == 'articles' %}active{% endif %}">Articles</a>
                 <a href="/discover" class="{% if active_page == 'discover' %}active{% endif %}">Discover</a>
+                <a href="/bookmarks" class="{% if active_page == 'bookmarks' %}active{% endif %}">Bookmarks</a>
                 <a href="/communities" class="{% if active_page == 'communities' %}active{% endif %}">Communities</a>
                 <a href="/docs" class="{% if active_page == 'docs' %}active{% endif %}">Docs</a>
                 <a href="/admin/login">Admin</a>
@@ -433,6 +508,19 @@
         </div>
     </footer>
     
+    <script>
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const toggle = document.querySelector('.nav-toggle');
+            const nav = document.querySelector('nav');
+            if (toggle && nav.classList.contains('open')) {
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.focus();
+            }
+        }
+    });
+    </script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
