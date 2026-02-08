@@ -935,7 +935,10 @@ function voteItem(type, slug, action) {
         ? `/api/v1/articles/${slug}/${action}`
         : `/api/v1/tools/${slug}/${action}`;
 
-    fetch(endpoint, { method: 'POST' }).catch(console.error);
+    fetch(endpoint, { method: 'POST' }).catch(err => {
+        console.error(err);
+        if (typeof showToast === 'function') showToast('Vote failed to save. Please try again.');
+    });
 }
 
 function bookmarkItem(type, slug) {

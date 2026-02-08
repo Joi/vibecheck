@@ -41,7 +41,7 @@
 </div>
 
 {% if tool.categories %}
-<div style="margin-bottom: 2rem;">
+<div class="tool-section">
     <h2>Categories</h2>
     <div class="card-tags" style="margin-top: 0.5rem;">
         {% for cat in tool.categories %}
@@ -52,7 +52,7 @@
 {% endif %}
 
 {% if communities %}
-<div style="margin-bottom: 2rem;">
+<div class="tool-section">
     <h2>Discussed In</h2>
     <div class="card-tags" style="margin-top: 0.5rem;">
         {% for comm in communities %}
@@ -65,7 +65,7 @@
 {% endif %}
 
 {% if evaluations %}
-<div style="margin-bottom: 2rem;">
+<div class="tool-section">
     <h2>Community Evaluations</h2>
     {% for eval in evaluations %}
     <div class="card" style="margin-top: 1rem;">
@@ -91,7 +91,7 @@
 {% endif %}
 
 {% if links %}
-<div style="margin-bottom: 2rem;">
+<div class="tool-section">
     <h2>Related Links</h2>
     {% for link in links %}
     <div class="article-item">
@@ -110,7 +110,7 @@
 {% endif %}
 
 {% if mentions %}
-<div style="margin-bottom: 2rem;">
+<div class="tool-section">
     <h2>Recent Mentions</h2>
     {% for mention in mentions[:10] %}
     <div class="article-item">

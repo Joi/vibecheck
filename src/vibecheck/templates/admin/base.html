@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} - Vibecheck Admin</title>
+    <style>
+        /* === Reset & Base === */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* === Admin Navigation === */
+        .admin-nav {
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-nav h1 { font-size: 1.2rem; }
+        .admin-nav a { color: #888; text-decoration: none; margin-left: 20px; }
+        .admin-nav a:hover { color: #00d4ff; }
+
+        /* === Container === */
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+        h2 { margin-bottom: 24px; }
+
+        /* === Buttons === */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #7b2cbf 100%);
+            color: #fff;
+        }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-danger {
+            background: rgba(255,0,0,0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255,0,0,0.3);
+        }
+
+        /* === Form Controls === */
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+        }
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        textarea { min-height: 120px; resize: vertical; font-family: inherit; }
+        .help-text { color: #666; font-size: 0.8rem; margin-top: 4px; }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        /* === Tables === */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        th {
+            background: rgba(255,255,255,0.05);
+            font-weight: 600;
+            color: #888;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        tr:hover { background: rgba(255,255,255,0.03); }
+
+        /* === List Page Layout === */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .search-box { display: flex; gap: 12px; }
+        .pagination {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: rgba(0,212,255,0.1);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #00d4ff;
+            margin-right: 4px;
+        }
+
+        {% block admin_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% block layout %}
+    <nav class="admin-nav">
+        <h1>🛠️ Vibecheck Admin</h1>
+        <div>
+            {% block nav_links %}
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/tools">Tools</a>
+            <a href="/admin/articles">Articles</a>
+            <a href="/">View Site</a>
+            <a href="/admin/logout">Logout</a>
+            {% endblock %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block admin_content %}{% endblock %}
+    </div>
+    {% endblock %}
+
+    {% block admin_scripts %}{% endblock %}
+</body>
+</html>

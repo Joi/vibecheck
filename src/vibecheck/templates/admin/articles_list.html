@@ -1,114 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Articles - Vibecheck Admin</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f0f1a;
-            color: #fff;
-            min-height: 100vh;
-        }
-        .navbar {
-            background: rgba(255,255,255,0.05);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .navbar h1 { font-size: 1.2rem; }
-        .navbar a { color: #888; text-decoration: none; margin-left: 20px; }
-        .navbar a:hover { color: #00d4ff; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-        .search-box { display: flex; gap: 12px; }
-        input[type="text"] {
-            padding: 10px 16px;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 6px;
-            background: rgba(255,255,255,0.05);
-            color: #fff;
-            font-size: 0.9rem;
-            width: 300px;
-        }
-        input[type="text"]:focus { outline: none; border-color: #00d4ff; }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #00d4ff 0%, #7b2cbf 100%);
-            color: #fff;
-        }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
-        .btn-danger {
-            background: rgba(255,0,0,0.2);
-            color: #ff6b6b;
-            border: 1px solid rgba(255,0,0,0.3);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: rgba(255,255,255,0.02);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        th, td {
-            padding: 14px 16px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        th {
-            background: rgba(255,255,255,0.05);
-            font-weight: 600;
-            color: #888;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-        }
-        tr:hover { background: rgba(255,255,255,0.03); }
-        .article-title { font-weight: 600; max-width: 300px; }
-        .article-url {
-            color: #888;
-            font-size: 0.8rem;
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .actions { display: flex; gap: 8px; }
-        .pagination {
-            margin-top: 24px;
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar">
-        <h1>🛠️ Vibecheck Admin</h1>
-        <div>
-            <a href="/admin">Dashboard</a>
-            <a href="/">View Site</a>
-            <a href="/admin/logout">Logout</a>
-        </div>
-    </nav>
-    
-    <div class="container">
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Articles{% endblock %}
+
+{% block admin_styles %}
+.article-title { font-weight: 600; max-width: 300px; }
+.article-url {
+    color: #888;
+    font-size: 0.8rem;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.row-actions { display: flex; gap: 8px; }
+{% endblock %}
+
+{% block admin_content %}
         <div class="header">
             <h2>Manage Articles ({{ total }})</h2>
             <div class="search-box">
@@ -139,7 +46,7 @@
                     </td>
                     <td>{{ article.author or '—' }}</td>
                     <td>{{ article.source or '—' }}</td>
-                    <td class="actions">
+                    <td class="row-actions">
                         <a href="/admin/articles/{{ article.slug }}/edit" class="btn btn-secondary">Edit</a>
                         <form method="POST" action="/admin/articles/{{ article.slug }}/delete" 
                               onsubmit="return confirm('Delete this article?');" style="display:inline;">
@@ -160,6 +67,4 @@
             <a href="?page={{ page + 1 }}&search={{ search }}" class="btn btn-secondary">Next →</a>
             {% endif %}
         </div>
-    </div>
-</body>
-</html>
+{% endblock %}

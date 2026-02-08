@@ -10,10 +10,7 @@
     }
     
     .bookmark-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 1rem;
+        /* Layout-specific styles (base card + compact modifier handle bg/border/radius/padding) */
         margin-bottom: 1rem;
         display: flex;
         justify-content: space-between;
@@ -92,7 +89,7 @@ function loadBookmarks() {
         const [type, slug] = key.split(':');
         const url = type === 'article' ? `/articles/${slug}` : `/tools/${slug}`;
         return `
-            <div class="bookmark-card" data-key="${key}">
+            <div class="card card--compact bookmark-card" data-key="${key}">
                 <div class="bookmark-info">
                     <span class="bookmark-type">${type}</span>
                     <h3><a href="${url}">${slug}</a></h3>

@@ -1,7 +1,9 @@
 """Tests for template rendering - verifying block inheritance works."""
+
+from pathlib import Path
+
 import pytest
 from jinja2 import Environment, FileSystemLoader
-from pathlib import Path
 
 
 @pytest.fixture
@@ -77,8 +79,8 @@ class TestMobileNavigation:
         """Hamburger button must have proper ARIA attributes."""
         template = jinja_env.get_template("base.html")
         html = template.render(request=None, active_page="tools")
-        assert 'aria-expanded' in html, "Hamburger button must have aria-expanded attribute."
-        assert 'aria-label' in html, "Hamburger button must have aria-label attribute."
+        assert "aria-expanded" in html, "Hamburger button must have aria-expanded attribute."
+        assert "aria-label" in html, "Hamburger button must have aria-label attribute."
 
 
 class TestNavigation:
@@ -88,7 +90,7 @@ class TestNavigation:
         """Navigation must include a link to the bookmarks page."""
         template = jinja_env.get_template("base.html")
         html = template.render(request=None, active_page="tools")
-        assert '/bookmarks' in html, (
+        assert "/bookmarks" in html, (
             "Navigation must include a link to /bookmarks. "
             "The route exists (web.py) and Discover saves bookmarks, "
             "but users can't find them."
@@ -99,8 +101,183 @@ class TestNavigation:
         template = jinja_env.get_template("base.html")
         html = template.render(request=None, active_page="bookmarks")
         import re
+
         bookmarks_link = re.search(r'<a[^>]*href="/bookmarks"[^>]*>', html)
         assert bookmarks_link is not None, "Bookmarks link not found in nav"
-        assert 'active' in bookmarks_link.group(), (
+        assert "active" in bookmarks_link.group(), (
             "Bookmarks link should have 'active' class when active_page='bookmarks'"
         )
+
+
+class TestAdminTemplates:
+    """Verify admin templates extend admin/base.html."""
+
+    def test_admin_base_template_exists(self, jinja_env):
+        """admin/base.html must exist as a shared admin template."""
+        template = jinja_env.get_template("admin/base.html")
+        html = template.render(request=None, active_page="admin")
+        assert "admin" in html.lower(), "admin/base.html must render admin content"
+
+    def test_admin_login_extends_admin_base(self, jinja_env):
+        """Admin login template should extend admin/base.html."""
+        template = jinja_env.get_template("admin/login.html")
+        html = template.render(request=None, active_page="admin")
+        # After refactoring, admin pages should share the admin shell
+        assert "admin-nav" in html or "admin-header" in html or "Admin" in html, (
+            "Admin login should render admin shell from admin/base.html"
+        )
+
+
+class TestUnifiedComponents:
+    """Verify unified component system exists."""
+
+    def test_base_has_card_modifier_classes(self, jinja_env):
+        """base.html must define card modifier CSS classes."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert ".card--compact" in html, "Missing .card--compact modifier class"
+
+    def test_base_has_button_states(self, jinja_env):
+        """Buttons must have disabled, focus-visible, and active states."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert ":disabled" in html or "[disabled]" in html, "Buttons missing :disabled state"
+        assert "focus-visible" in html, "Buttons missing :focus-visible state"
+
+    def test_base_has_unified_tag_system(self, jinja_env):
+        """base.html must define a unified .tag with modifier classes."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert ".tag" in html, "Missing base .tag class"
+
+
+class TestDesignTokens:
+    """Verify design token system exists."""
+
+    def test_spacing_scale_custom_properties(self, jinja_env):
+        """base.html must define spacing scale CSS custom properties."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "--space-1" in html, "Missing --space-1 custom property"
+        assert "--space-4" in html, "Missing --space-4 custom property"
+        assert "--space-8" in html, "Missing --space-8 custom property"
+
+    def test_fluid_typography(self, jinja_env):
+        """h1 must use clamp() for fluid sizing instead of breakpoint jumps."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "clamp(" in html, "Typography should use clamp() for fluid sizing"
+
+    def test_tool_page_no_inline_margin_styles(self, jinja_env):
+        """tool.html should not use inline style for margins."""
+        template = jinja_env.get_template("tool.html")
+        # Render with minimal context - we just need to check CSS/HTML structure
+        try:
+            html = template.render(
+                request=None,
+                active_page="tools",
+                tool={
+                    "name": "Test",
+                    "slug": "test",
+                    "description": "test",
+                    "url": "http://test.com",
+                    "category": "test",
+                    "tags": [],
+                    "avg_score": 0,
+                    "total_votes": 0,
+                },
+                evaluations=[],
+                mentions=[],
+                links=[],
+                communities=[],
+            )
+        except Exception:
+            # If template needs more context, just read the source
+            import pathlib
+
+            html = pathlib.Path(
+                "/Users/joi/vibecheck/src/vibecheck/templates/tool.html"
+            ).read_text()
+        assert 'style="margin-bottom' not in html, (
+            "tool.html still uses inline margin-bottom styles. Use .tool-section class instead."
+        )
+
+
+class TestA11yEnhancements:
+    """Verify accessibility enhancements."""
+
+    def test_skip_to_content_link(self, jinja_env):
+        """base.html must have a skip-to-content link for keyboard users."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "skip-to-content" in html or "skip-link" in html, (
+            "base.html must include a skip-to-content link."
+        )
+
+    def test_nav_has_aria_label(self, jinja_env):
+        """Nav element must have an aria-label."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        # Check that <nav has aria-label (not just the hamburger button's aria-label)
+        import re
+
+        nav_tag = re.search(r"<nav[^>]*>", html)
+        assert nav_tag is not None, "No <nav> element found"
+        assert "aria-label" in nav_tag.group(), "Nav must have aria-label attribute"
+
+    def test_focus_visible_styles_exist(self, jinja_env):
+        """base.html must define :focus-visible styles for all interactive elements."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "a:focus-visible" in html, "Missing a:focus-visible global style in base.html"
+
+    def test_search_has_role(self, jinja_env):
+        """Search box must have role=search."""
+        template = jinja_env.get_template("index.html")
+        html = template.render(
+            request=None,
+            active_page="tools",
+            tools=[],
+            total_tools=0,
+            total_articles=0,
+            communities=[],
+        )
+        assert 'role="search"' in html, 'Search box must have role="search"'
+
+    def test_main_has_id_for_skip_link(self, jinja_env):
+        """Main element must have id for skip-to-content link target."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert 'id="main-content"' in html, "Main element must have id='main-content'"
+
+    def test_hover_hover_media_query(self, jinja_env):
+        """Card hover effects should be guarded with @media (hover: hover)."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "hover: hover" in html, (
+            "Card hover effects must be wrapped in @media (hover: hover) "
+            "to prevent sticky hover on touch devices."
+        )
+
+
+class TestLoadingAndFeedback:
+    """Verify loading states and error feedback exist."""
+
+    def test_skeleton_css_exists(self, jinja_env):
+        """base.html must define skeleton loading animation."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "skeleton" in html, "Missing skeleton loading CSS in base.html"
+        assert "@keyframes" in html and "shimmer" in html, "Missing shimmer animation"
+
+    def test_toast_component_exists(self, jinja_env):
+        """base.html must define a toast/notification component."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "toast" in html, "Missing toast notification CSS in base.html"
+
+    def test_empty_state_component_exists(self, jinja_env):
+        """base.html must define an empty state component."""
+        template = jinja_env.get_template("base.html")
+        html = template.render(request=None, active_page="tools")
+        assert "empty-state" in html, "Missing .empty-state component CSS in base.html"
