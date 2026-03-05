@@ -364,7 +364,12 @@ def fetch_url_metadata(url: str, client: httpx.Client) -> dict:
     result = {'title': None, 'description': None}
     
     try:
-        resp = client.get(url, follow_redirects=True, timeout=15)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        resp = client.get(url, follow_redirects=True, timeout=15, headers=headers)
         if resp.status_code != 200:
             return result
         
@@ -462,8 +467,8 @@ def push_articles_to_vibecheck(
             if not title:
                 title = generate_title_from_url(url)
             
-            # Use description from page, or fall back to WhatsApp context
-            summary = description or sanitize_context(article.get('context', ''), 300)
+            # Only use description fetched from the actual page — never chat snippets
+            summary = description or None
             
             payload = {
                 'url': url,
