@@ -26,3 +26,6 @@ data/imports/*.txt
 supabase/.temp/
 .vercel
 .env*.local
+
+# Beads lock files
+.beads/*.lock
