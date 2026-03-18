@@ -29,3 +29,6 @@ supabase/.temp/
 
 # Beads lock files
 .beads/*.lock
+
+# Beads migration artifacts
+.beads-archive-issues.jsonl
