@@ -1,7 +1,7 @@
 {
   "database": "dolt",
   "backend": "dolt",
-  "dolt_mode": "server",
+  "dolt_mode": "embedded",
   "dolt_database": "vibecheck",
   "project_id": "0c4383f2-b23c-40e6-bf21-3f8612e8ec5f"
 }
