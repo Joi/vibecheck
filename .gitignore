@@ -35,3 +35,9 @@ supabase/.temp/
 *.db
 # Beads migration artifacts
 .beads-archive-issues.jsonl
+
+# Beads / Dolt files (added by bd init)
+.beads-credential-key
+
+# Broken bd local version files (renamed-aside corrupt versions)
+.beads/.local_version.broken-*
