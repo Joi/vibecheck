@@ -41,3 +41,4 @@ supabase/.temp/
 
 # Broken bd local version files (renamed-aside corrupt versions)
 .beads/.local_version.broken-*
+.kata.local.toml
